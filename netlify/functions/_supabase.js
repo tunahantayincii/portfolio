@@ -1,9 +1,16 @@
 const { json } = require("./_auth");
 
 function config() {
-  const url = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!url || !key) throw new Error("Supabase is not configured");
+  const rawUrl = (process.env.SUPABASE_URL || "").trim().replace(/^["']|["']$/g, "");
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim().replace(/^["']|["']$/g, "");
+  if (!rawUrl || !key) throw new Error("Supabase is not configured");
+
+  let parsed;
+  try { parsed = new URL(rawUrl); }
+  catch { throw new Error("Invalid SUPABASE_URL"); }
+
+  if (!parsed.hostname.endsWith(".supabase.co")) throw new Error("Invalid SUPABASE_URL");
+  const url = `${parsed.protocol}//${parsed.host}`;
   return { url, key };
 }
 
@@ -32,7 +39,7 @@ function supabaseError(error) {
   if (/invalid.*key|invalid.*jwt|unauthorized|jwt/i.test(message)) {
     return json(500, { error: "Supabase service_role anahtarı hatalı veya geçersiz." });
   }
-  if (/fetch failed|ENOTFOUND|ECONNREFUSED|Invalid URL/i.test(message)) {
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|Invalid URL|Invalid SUPABASE_URL/i.test(message)) {
     return json(500, { error: "SUPABASE_URL hatalı veya Supabase'e ulaşılamıyor." });
   }
   return json(500, { error: "Supabase veri servisi yanıt vermedi. Netlify Function loglarını kontrol edin." });
