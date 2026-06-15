@@ -3,8 +3,33 @@ const { getCookie, json, verifyToken } = require("./_auth");
 const { config, supabaseError, supabaseFetch } = require("./_supabase");
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" }, { Allow: "POST" });
   if (!verifyToken(getCookie(event))) return json(401, { error: "Unauthorized" });
+
+  if (event.httpMethod === "GET") {
+    try {
+      const { url } = config();
+      const items = [];
+      for (const prefix of ["hero", "covers", "pages"]) {
+        const response = await supabaseFetch("/storage/v1/object/list/portfolio-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prefix, limit: 100, sortBy: { column: "created_at", order: "desc" } })
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const files = await response.json();
+        files.filter((file) => file.name && !file.id?.endsWith("/")).forEach((file) => items.push({
+          name: file.name,
+          prefix,
+          url: `${url}/storage/v1/object/public/portfolio-media/${prefix}/${file.name}`
+        }));
+      }
+      return json(200, { items });
+    } catch (error) {
+      return supabaseError(error);
+    }
+  }
+
+  if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" }, { Allow: "GET, POST" });
 
   let body;
   try { body = JSON.parse(event.body || "{}"); }

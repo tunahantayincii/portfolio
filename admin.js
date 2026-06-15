@@ -2,7 +2,19 @@ let content;
 let editingPages = [];
 let editingCover = "";
 let pendingHero = "";
+let editingPageIndex = -1;
+let draggedPageIndex = -1;
 const $ = (selector) => document.querySelector(selector);
+
+function normalizePage(page) {
+  if (typeof page === "string") return { src: page, fit: "cover", position: "center", background: "#e8e4da" };
+  return {
+    src: page.src || page.image || "",
+    fit: page.fit === "contain" ? "contain" : "cover",
+    position: page.position || "center",
+    background: page.background || "#e8e4da"
+  };
+}
 
 function showPanel() {
   $("#login-screen").classList.add("hidden");
@@ -76,19 +88,71 @@ function renderProjects() {
     const card = document.createElement("button");
     card.className = "admin-project";
     card.type = "button";
-    card.innerHTML = `<img src="${project.cover}" alt=""><strong>${project.title}</strong><small>${project.location} · ${project.year} · ${project.pages.length} sayfa</small>`;
+    card.innerHTML = `<img src="${project.cover}" alt=""><strong>${project.title}</strong><small>${project.location} · ${project.year} · ${(project.pages || []).length} sayfa</small>`;
     card.addEventListener("click", () => openEditor(project.id));
     container.appendChild(card);
   });
 }
 
 function renderPagePreviews() {
-  $("#page-previews").innerHTML = editingPages.map((image, index) => `
-    <div class="page-preview"><img src="${image}" alt="Sayfa ${index + 1}"><button type="button" data-remove-page="${index}" aria-label="Sayfayı sil">×</button></div>`).join("");
+  $("#page-previews").innerHTML = editingPages.map((page, index) => `
+    <div class="page-preview" draggable="true" data-page-index="${index}">
+      <div class="page-preview-visual" style="--page-bg:${page.background};--page-fit:${page.fit};--page-position:${page.position}">
+        <img src="${page.src}" alt="Sayfa ${index + 1}"><span class="page-preview-number">${index + 1}</span>
+      </div>
+      <div class="page-preview-actions"><button type="button" data-move-page="${index}" data-direction="-1" aria-label="Sola taşı">←</button><button type="button" data-edit-page="${index}">Yerleşim</button><button type="button" data-move-page="${index}" data-direction="1" aria-label="Sağa taşı">→</button><button class="remove-page" type="button" data-remove-page="${index}">Sil</button></div>
+    </div>`).join("");
   document.querySelectorAll("[data-remove-page]").forEach((button) => button.addEventListener("click", () => {
     editingPages.splice(Number(button.dataset.removePage), 1);
     renderPagePreviews();
   }));
+  document.querySelectorAll("[data-edit-page]").forEach((button) => button.addEventListener("click", () => openPageSettings(Number(button.dataset.editPage))));
+  document.querySelectorAll("[data-move-page]").forEach((button) => button.addEventListener("click", () => {
+    const from = Number(button.dataset.movePage);
+    const to = from + Number(button.dataset.direction);
+    if (to < 0 || to >= editingPages.length) return;
+    [editingPages[from], editingPages[to]] = [editingPages[to], editingPages[from]];
+    renderPagePreviews();
+  }));
+  document.querySelectorAll(".page-preview").forEach((card) => {
+    card.addEventListener("dragstart", () => {
+      draggedPageIndex = Number(card.dataset.pageIndex);
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend", () => {
+      draggedPageIndex = -1;
+      document.querySelectorAll(".page-preview").forEach((item) => item.classList.remove("dragging", "drag-over"));
+    });
+    card.addEventListener("dragover", (event) => { event.preventDefault(); card.classList.add("drag-over"); });
+    card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const targetIndex = Number(card.dataset.pageIndex);
+      if (draggedPageIndex < 0 || draggedPageIndex === targetIndex) return;
+      const [moved] = editingPages.splice(draggedPageIndex, 1);
+      editingPages.splice(targetIndex, 0, moved);
+      renderPagePreviews();
+    });
+  });
+}
+
+function updateLayoutPreview() {
+  const preview = $("#layout-preview");
+  const image = $("#layout-preview-image");
+  preview.style.background = $("#page-background").value;
+  image.style.objectFit = $("#page-fit").value;
+  image.style.objectPosition = $("#page-position").value;
+}
+
+function openPageSettings(index) {
+  editingPageIndex = index;
+  const page = editingPages[index];
+  $("#layout-preview-image").src = page.src;
+  $("#page-fit").value = page.fit;
+  $("#page-position").value = page.position;
+  $("#page-background").value = page.background;
+  updateLayoutPreview();
+  $("#page-settings").showModal();
 }
 
 function openEditor(id = "") {
@@ -98,7 +162,7 @@ function openEditor(id = "") {
   const form = $("#project-form");
   ["id", "title", "year", "location", "category", "color", "description"].forEach((field) => { form.elements[field].value = project[field]; });
   editingCover = project.cover;
-  editingPages = [...project.pages];
+  editingPages = (project.pages || []).map(normalizePage);
   $("#cover-preview").src = editingCover;
   $("#delete-project").style.visibility = id ? "visible" : "hidden";
   renderPagePreviews();
@@ -147,7 +211,7 @@ $("#pages-upload").addEventListener("change", async (event) => {
   try {
     const dataUrls = await Promise.all([...event.target.files].map((file) => imageFileToDataUrl(file, 1800)));
     const newPages = [];
-    for (const dataUrl of dataUrls) newPages.push(await uploadImage(dataUrl, "pages"));
+    for (const dataUrl of dataUrls) newPages.push(normalizePage(await uploadImage(dataUrl, "pages")));
     editingPages.push(...newPages);
     renderPagePreviews();
     status("Kaydetmeye hazır");
@@ -218,3 +282,39 @@ async function checkSession() {
 }
 
 checkSession();
+
+["page-fit", "page-position", "page-background"].forEach((id) => $(`#${id}`).addEventListener("input", updateLayoutPreview));
+$("#close-page-settings").addEventListener("click", () => $("#page-settings").close());
+$("#save-page-settings").addEventListener("click", () => {
+  if (editingPageIndex < 0) return;
+  editingPages[editingPageIndex] = {
+    ...editingPages[editingPageIndex],
+    fit: $("#page-fit").value,
+    position: $("#page-position").value,
+    background: $("#page-background").value
+  };
+  renderPagePreviews();
+  $("#page-settings").close();
+  status("Sayfa yerleşimi güncellendi. Projeyi kaydetmeyi unutmayın.");
+});
+
+$("#close-media-library").addEventListener("click", () => $("#media-library").close());
+$("#open-media-library").addEventListener("click", async () => {
+  const grid = $("#media-grid");
+  grid.innerHTML = "<p>Medya havuzu yükleniyor...</p>";
+  $("#media-library").showModal();
+  try {
+    const response = await fetch("/api/media");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Medya havuzu yüklenemedi");
+    grid.innerHTML = result.items.length ? result.items.map((item, index) => `
+      <button class="media-item" type="button" data-media-index="${index}"><img src="${item.url}" alt=""><span>${item.prefix}</span></button>`).join("") : "<p>Henüz yüklenmiş görsel yok.</p>";
+    document.querySelectorAll("[data-media-index]").forEach((button) => button.addEventListener("click", () => {
+      editingPages.push(normalizePage(result.items[Number(button.dataset.mediaIndex)].url));
+      renderPagePreviews();
+      status("Görsel kitap sayfalarına eklendi");
+    }));
+  } catch (error) {
+    grid.innerHTML = `<p>${error.message}</p>`;
+  }
+});

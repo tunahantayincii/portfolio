@@ -65,11 +65,35 @@
         <label>Kitap rengi<input name="color" type="color"></label>
         <label class="full">Proje açıklaması<textarea name="description"></textarea></label>
         <label class="full upload-field">Kitap kapak görseli<input id="cover-upload" type="file" accept="image/*"><span>Kapak seç</span><img id="cover-preview"></label>
-        <label class="full upload-field">Kitabın iç sayfaları<input id="pages-upload" type="file" accept="image/*" multiple><span>Birden fazla görsel seçebilirsiniz</span></label>
+        <div class="full page-editor-head">
+          <div><strong>Kitap sayfaları</strong><small>Sayfaları sürükleyerek sıralayın. Görsele tıklayarak yerleşimini düzenleyin.</small></div>
+          <button type="button" id="open-media-library">Medya havuzundan seç</button>
+        </div>
+        <label class="full upload-field">Yeni görseller yükle<input id="pages-upload" type="file" accept="image/*" multiple><span>Birden fazla görsel seçebilirsiniz</span></label>
         <div class="full page-previews" id="page-previews"></div>
       </div>
       <div class="dialog-actions"><button type="button" id="delete-project">Projeyi sil</button><button class="primary" type="submit">Projeyi kaydet</button></div>
     </form>
+  </dialog>
+  <dialog id="page-settings">
+    <div class="page-settings-content">
+      <div class="dialog-head"><h2>Sayfa Yerleşimi</h2><button type="button" id="close-page-settings">×</button></div>
+      <div class="page-layout-editor">
+        <div class="layout-preview" id="layout-preview"><img id="layout-preview-image" alt=""></div>
+        <div class="layout-controls">
+          <label>Görsel biçimi<select id="page-fit"><option value="cover">Sayfayı kapla</option><option value="contain">Görselin tamamını göster</option></select></label>
+          <label>Odak noktası<select id="page-position"><option value="center">Orta</option><option value="top">Üst</option><option value="bottom">Alt</option><option value="left">Sol</option><option value="right">Sağ</option><option value="left top">Sol üst</option><option value="right top">Sağ üst</option><option value="left bottom">Sol alt</option><option value="right bottom">Sağ alt</option></select></label>
+          <label>Sayfa arka planı<input id="page-background" type="color" value="#e8e4da"></label>
+          <button class="primary" type="button" id="save-page-settings">Yerleşimi uygula</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="media-library">
+    <div class="media-library-content">
+      <div class="dialog-head"><div><h2>Medya Havuzu</h2><p>Daha önce yüklediğiniz görsellerden kitap sayfasına ekleyin.</p></div><button type="button" id="close-media-library">×</button></div>
+      <div class="media-grid" id="media-grid"></div>
+    </div>
   </dialog>
   </div>
   <script src="content.js"></script><script src="admin.js"></script>

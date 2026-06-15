@@ -40,14 +40,18 @@ async function initializeSite() {
   function makePages(project) {
     return [
       { type: "intro", project },
-      ...project.pages.map((image, index) => ({ type: "image", image, number: index + 1 })),
+      ...(project.pages || []).map((page, index) => ({
+        type: "image",
+        page: typeof page === "string" ? { src: page, fit: "cover", position: "center", background: "#e8e4da" } : page,
+        number: index + 1
+      })),
       { type: "end", project }
     ];
   }
 
   function pageMarkup(page) {
     if (!page) return `<div class="blank-page"></div>`;
-    if (page.type === "image") return `<img class="reader-image" src="${page.image}" alt="Proje sayfası ${page.number}"><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "image") return `<div class="reader-image-frame" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "end") return `<div class="end-page"><span>${settings.studioName}</span><strong>${page.project.title}</strong><small>${page.project.year}</small></div>`;
     return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
   }
