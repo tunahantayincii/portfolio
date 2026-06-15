@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tunahan Tayıncı Portfolio — Yönetim</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Manrope:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <section class="login-screen" id="login-screen">
+    <form class="login-card" id="login-form">
+      <a class="login-logo" href="index.html"><span>TUNAHAN TAYINCI</span><span>PORTFOLIO</span></a>
+      <p>Yönetim paneli</p>
+      <h1>Tekrar hoş geldiniz.</h1>
+      <label>Kullanıcı adı<input name="username" autocomplete="username" required></label>
+      <label>Şifre<input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="login-error" id="login-error" role="alert"></p>
+      <button class="primary" type="submit">Giriş yap</button>
+      <a class="back-site" href="index.html">← Portfolyoya dön</a>
+    </form>
+  </section>
+  <div class="admin-shell" id="admin-shell">
+  <aside>
+    <a class="admin-logo" href="index.html"><span>TUNAHAN TAYINCI</span><span>PORTFOLIO</span><small>YÖNETİM</small></a>
+    <nav><button data-tab="general" class="active">Genel İçerik</button><button data-tab="projects">Projeler</button><button data-tab="backup">Yedekleme</button></nav>
+    <div class="aside-bottom"><a class="view-site" href="index.html">Siteyi görüntüle ↗</a><button id="logout-button" type="button">Çıkış yap</button></div>
+  </aside>
+  <main>
+    <header><div><span>İçerik yönetimi</span><h1 id="panel-title">Genel İçerik</h1></div><p id="save-status">Değişiklik yok</p></header>
+
+    <section class="panel active" id="general">
+      <form id="settings-form" class="form-grid">
+        <label>Ad / Portfolyo adı<input name="studioName"></label>
+        <label>Öğrenci bilgisi / Konum<input name="heroLocation"></label>
+        <label class="full">Ana başlık <small>İtalik alan için &lt;em&gt;metin&lt;/em&gt; kullanabilirsiniz.</small><textarea name="heroTitle"></textarea></label>
+        <label class="full upload-field">Ana kapak görseli<input id="hero-upload" type="file" accept="image/*"><span>Görsel seç</span><img id="hero-preview"></label>
+        <label class="full">Giriş metni<textarea name="intro"></textarea></label>
+        <label class="full">Hakkımda başlığı<textarea name="studioTitle"></textarea></label>
+        <label class="full">Hakkımda açıklaması<textarea name="studioDescription"></textarea></label>
+        <label>E-posta<input name="email" type="email"></label><label>Telefon<input name="phone"></label>
+        <label class="full">Adres<textarea name="address"></textarea></label>
+        <button class="primary" type="submit">Genel içeriği kaydet</button>
+      </form>
+    </section>
+
+    <section class="panel" id="projects">
+      <div class="project-toolbar"><p>Projeler kitap olarak gösterilir. Kapak ve iç sayfaları buradan yönetin.</p><button class="primary" id="add-project" type="button">+ Yeni proje</button></div>
+      <div class="admin-projects" id="admin-projects"></div>
+    </section>
+
+    <section class="panel" id="backup">
+      <div class="backup-card"><span>01</span><h2>İçeriği dışa aktar</h2><p>Tüm metinleri ve görselleri tek JSON dosyasında yedekleyin.</p><button class="primary" id="export-data">Yedeği indir</button></div>
+      <div class="backup-card"><span>02</span><h2>Yedeği geri yükle</h2><p>Daha önce indirdiğiniz JSON yedeğini yükleyin.</p><label class="file-button">Yedek seç<input id="import-data" type="file" accept=".json"></label></div>
+      <div class="backup-card danger"><span>03</span><h2>Fabrika ayarları</h2><p>Tüm değişiklikleri silip ilk içeriğe dönün.</p><button id="reset-data">İçeriği sıfırla</button></div>
+    </section>
+  </main>
+
+  <dialog id="project-editor">
+    <form id="project-form" method="dialog">
+      <input name="id" type="hidden">
+      <div class="dialog-head"><h2>Proje Düzenle</h2><button value="cancel" type="button" id="close-editor">×</button></div>
+      <div class="form-grid">
+        <label>Proje adı<input name="title" required></label><label>Yıl<input name="year" required></label>
+        <label>Ders / Stüdyo<input name="location" required></label><label>Proje türü<input name="category" required></label>
+        <label>Kitap rengi<input name="color" type="color"></label>
+        <label class="full">Proje açıklaması<textarea name="description"></textarea></label>
+        <label class="full upload-field">Kitap kapak görseli<input id="cover-upload" type="file" accept="image/*"><span>Kapak seç</span><img id="cover-preview"></label>
+        <label class="full upload-field">Kitabın iç sayfaları<input id="pages-upload" type="file" accept="image/*" multiple><span>Birden fazla görsel seçebilirsiniz</span></label>
+        <div class="full page-previews" id="page-previews"></div>
+      </div>
+      <div class="dialog-actions"><button type="button" id="delete-project">Projeyi sil</button><button class="primary" type="submit">Projeyi kaydet</button></div>
+    </form>
+  </dialog>
+  </div>
+  <script src="content.js"></script><script src="admin.js"></script>
+</body>
+</html>
