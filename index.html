@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Mimarlık öğrencisi kişisel proje ve tasarım portfolyosu.">
+  <title>Tunahan Tayıncı Portfolio — Mimarlık Öğrencisi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header" id="top">
+    <a class="logo" href="#top"><span>TUNAHAN TAYINCI</span><span>PORTFOLIO</span></a>
+    <button class="menu-toggle" type="button" aria-label="Menüyü aç" aria-expanded="false"><span></span><span></span></button>
+    <nav class="nav-links">
+      <a href="#projects">Projeler</a><a href="#studio">Hakkımda</a><a href="#contact">İletişim</a><a href="admin.html">Yönetim</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <img id="hero-image" src="assets/hero-residence.png" alt="Seçili mimari proje" fetchpriority="high">
+      <div class="hero-shade"></div>
+      <div class="hero-content"><p class="eyebrow" id="hero-location"></p><h1 id="hero-title"></h1></div>
+      <div class="hero-meta"><span>Seçili Proje 01</span><span id="hero-meta"></span></div>
+      <a class="scroll-cue" href="#projects"><span>Keşfet</span><i></i></a>
+    </section>
+
+    <section class="intro section-pad reveal" id="projects">
+      <div class="section-index">01 / Proje Kitaplığı</div>
+      <div class="intro-copy">
+        <p id="intro-text"></p>
+        <span class="text-link">Bir kitabı seçerek projeyi keşfedin <span>↗</span></span>
+      </div>
+    </section>
+
+    <section class="book-library section-pad" id="project-grid" aria-label="Proje kitaplığı"></section>
+
+    <section class="studio section-pad" id="studio">
+      <div class="section-index light">02 / Hakkımda</div>
+      <div class="studio-heading reveal"><p>Tasarım yaklaşımım</p><h2 id="studio-title"></h2></div>
+      <div class="studio-details reveal">
+        <p id="studio-description"></p>
+        <div class="services"><span>01</span><p>Araştırma & Konsept</p><span>02</span><p>Eskiz & Maket</p><span>03</span><p>Modelleme & Görselleştirme</p></div>
+      </div>
+      <div class="studio-stats reveal"><div><strong>06</strong><span>Akademik proje</span></div><div><strong>04</strong><span>Katıldığım atölye</span></div><div><strong>08</strong><span>Kullandığım araç</span></div></div>
+    </section>
+
+    <section class="contact section-pad" id="contact">
+      <div class="section-index">03 / İletişim</div>
+      <div class="contact-main reveal"><p>Staj, atölye ve işbirliklerine açığım.</p><a id="contact-email" href="#">Tanışalım.<span>↗</span></a></div>
+      <footer>
+        <div class="footer-address"><strong id="footer-name"></strong><span id="footer-address"></span></div>
+        <div class="footer-links"><a id="footer-email"></a><a id="footer-phone"></a></div>
+        <div class="footer-social"><a href="#">Instagram ↗</a><a href="#">LinkedIn ↗</a><a href="admin.html">Yönetim Paneli ↗</a></div>
+        <p class="copyright">© 2026 Tunahan Tayıncı Portfolio</p>
+      </footer>
+    </section>
+  </main>
+
+  <dialog class="book-modal" id="book-modal">
+    <button class="book-close" type="button" aria-label="Projeyi kapat">×</button>
+    <div class="reader-heading"><span id="reader-kicker"></span><h2 id="reader-title"></h2></div>
+    <div class="book-reader">
+      <button class="reader-nav prev" type="button" aria-label="Önceki sayfa">←</button>
+      <div class="open-book">
+        <article class="paper-page page-left" id="page-left"></article>
+        <article class="paper-page page-right" id="page-right"></article>
+      </div>
+      <button class="reader-nav next" type="button" aria-label="Sonraki sayfa">→</button>
+    </div>
+    <div class="reader-progress"><span id="page-count"></span><i><b id="page-progress"></b></i></div>
+  </dialog>
+
+  <script src="content.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
