@@ -129,7 +129,7 @@ $("#hero-upload").addEventListener("change", async (event) => {
     pendingHero = await uploadImage(dataUrl, "hero");
     $("#hero-preview").src = pendingHero;
     status("Kaydetmeye hazır");
-  } catch { status("Görsel yüklenemedi", true); }
+  } catch (error) { status(error.message || "Görsel yüklenemedi", true); }
 });
 
 $("#cover-upload").addEventListener("change", async (event) => {
@@ -139,7 +139,7 @@ $("#cover-upload").addEventListener("change", async (event) => {
     editingCover = await uploadImage(dataUrl, "covers");
     $("#cover-preview").src = editingCover;
     status("Kaydetmeye hazır");
-  } catch { status("Kapak yüklenemedi", true); }
+  } catch (error) { status(error.message || "Kapak yüklenemedi", true); }
 });
 
 $("#pages-upload").addEventListener("change", async (event) => {
@@ -152,7 +152,7 @@ $("#pages-upload").addEventListener("change", async (event) => {
     renderPagePreviews();
     status("Kaydetmeye hazır");
     event.target.value = "";
-  } catch { status("Sayfalardan biri yüklenemedi", true); }
+  } catch (error) { status(error.message || "Sayfalardan biri yüklenemedi", true); }
 });
 
 $("#project-form").addEventListener("submit", async (event) => {

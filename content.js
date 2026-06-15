@@ -92,7 +92,7 @@ async function uploadImage(dataUrl, prefix = "project") {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ dataUrl, prefix })
   });
-  if (!response.ok) throw new Error("Image could not be uploaded");
-  const result = await response.json();
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
   return result.url;
 }
