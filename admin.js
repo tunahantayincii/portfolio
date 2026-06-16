@@ -24,6 +24,20 @@ function normalizeUrl(value) {
   return `https://${trimmed}`;
 }
 
+function getHeroSlides() {
+  content.settings.heroSlides = Array.isArray(content.settings.heroSlides) ? content.settings.heroSlides.slice(0, 3) : [];
+  while (content.settings.heroSlides.length < 3) {
+    const index = content.settings.heroSlides.length;
+    content.settings.heroSlides.push({
+      image: index === 0 ? (content.settings.heroImage || "assets/hero-residence.png") : "",
+      label: `Seçili Proje ${String(index + 1).padStart(2, "0")}`,
+      title: ""
+    });
+  }
+  content.settings.heroSlides[0].image = content.settings.heroSlides[0].image || content.settings.heroImage || "assets/hero-residence.png";
+  return content.settings.heroSlides;
+}
+
 function showPanel() {
   $("#login-screen").classList.add("hidden");
   $("#admin-shell").classList.add("authenticated");
@@ -85,7 +99,7 @@ function fillSettings() {
   Object.entries(content.settings).forEach(([key, value]) => {
     if (form.elements[key]) form.elements[key].value = value;
   });
-  pendingHero = content.settings.heroImage;
+  pendingHero = getHeroSlides()[0].image;
   $("#hero-preview").src = pendingHero;
   renderSocialFields();
   renderSkillFields();
@@ -94,19 +108,41 @@ function fillSettings() {
 
 function renderHeroFeaturedFields() {
   const list = $("#hero-featured-list");
-  const items = Array.isArray(content.settings.heroFeaturedProjects) ? content.settings.heroFeaturedProjects.slice(0, 3) : [];
+  const items = getHeroSlides();
   list.innerHTML = items.map((item, index) => `
     <div class="hero-featured-row">
-      <label>Sol yazı ${index + 1}<input data-hero-featured-label="${index}" value="${item.label || ""}" placeholder="Seçili Proje 01"></label>
+      <label>Sıra / etiket ${index + 1}<input data-hero-featured-label="${index}" value="${item.label || ""}" placeholder="Seçili Proje 01"></label>
       <label>Proje adı ${index + 1}<input data-hero-featured-title="${index}" value="${item.title || ""}" placeholder="Mazı Konutu / 2023"></label>
+      <label class="hero-slide-upload">Görsel ${index + 1}<input data-hero-slide-upload="${index}" type="file" accept="image/*"><span>Görsel seç</span><img src="${item.image || ""}" alt=""></label>
     </div>`).join("");
+  document.querySelectorAll("[data-hero-slide-upload]").forEach((input) => input.addEventListener("change", async (event) => {
+    const index = Number(event.currentTarget.dataset.heroSlideUpload);
+    try {
+      status(`${index + 1}. hero görseli yükleniyor...`);
+      const dataUrl = await imageFileToDataUrl(event.currentTarget.files[0], 2000);
+      const slides = getHeroSlides();
+      slides[index].image = await uploadImage(dataUrl, "hero");
+      if (index === 0) {
+        pendingHero = slides[index].image;
+        $("#hero-preview").src = pendingHero;
+      }
+      renderHeroFeaturedFields();
+      status("Hero görseli hazır. Genel içeriği kaydetmeyi unutmayın.");
+    } catch (error) {
+      status(error.message || "Hero görseli yüklenemedi", true);
+    }
+  }));
 }
 
 function collectHeroFeaturedFields() {
-  content.settings.heroFeaturedProjects = [0, 1, 2].map((index) => ({
+  const previousSlides = getHeroSlides();
+  content.settings.heroSlides = [0, 1, 2].map((index) => ({
+    image: previousSlides[index]?.image || (index === 0 ? pendingHero : "") || "assets/hero-residence.png",
     label: document.querySelector(`[data-hero-featured-label="${index}"]`)?.value.trim() || `Seçili Proje ${String(index + 1).padStart(2, "0")}`,
     title: document.querySelector(`[data-hero-featured-title="${index}"]`)?.value.trim() || ""
   }));
+  content.settings.heroImage = content.settings.heroSlides[0].image;
+  content.settings.heroFeaturedProjects = content.settings.heroSlides.map(({ label, title }) => ({ label, title }));
 }
 
 function renderSkillFields() {
@@ -253,9 +289,9 @@ $("#settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   Object.keys(content.settings).forEach((key) => {
-    if (key !== "heroImage" && key !== "socials" && key !== "skills" && key !== "heroFeaturedProjects" && data.has(key)) content.settings[key] = data.get(key).trim();
+    if (key !== "heroImage" && key !== "heroSlides" && key !== "socials" && key !== "skills" && key !== "heroFeaturedProjects" && data.has(key)) content.settings[key] = data.get(key).trim();
   });
-  content.settings.heroImage = pendingHero;
+  getHeroSlides()[0].image = pendingHero;
   collectHeroFeaturedFields();
   content.settings.contactUrl = normalizeUrl(content.settings.contactUrl || content.settings.email);
   collectSkillFields();
@@ -268,7 +304,9 @@ $("#hero-upload").addEventListener("change", async (event) => {
     status("Görsel yükleniyor...");
     const dataUrl = await imageFileToDataUrl(event.target.files[0], 2000);
     pendingHero = await uploadImage(dataUrl, "hero");
+    getHeroSlides()[0].image = pendingHero;
     $("#hero-preview").src = pendingHero;
+    renderHeroFeaturedFields();
     status("Kaydetmeye hazır");
   } catch (error) { status(error.message || "Görsel yüklenemedi", true); }
 });

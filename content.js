@@ -6,10 +6,10 @@ const DEFAULT_CONTENT = {
     heroTitle: "Düşünüyor,<br><em>çiziyor</em> ve üretiyorum.",
     heroLocation: "Mimarlık Öğrencisi · İstanbul",
     heroImage: "assets/hero-residence.png",
-    heroFeaturedProjects: [
-      { label: "Seçili Proje 01", title: "Mazı Konutu / 2023" },
-      { label: "Seçili Proje 02", title: "Avlu Sanat Merkezi / 2024" },
-      { label: "Seçili Proje 03", title: "Göl Pavyonu / 2025" }
+    heroSlides: [
+      { image: "assets/hero-residence.png", label: "Seçili Proje 01", title: "Mazı Konutu / 2023" },
+      { image: "assets/courtyard-center.png", label: "Seçili Proje 02", title: "Avlu Sanat Merkezi / 2024" },
+      { image: "assets/lake-pavilion.png", label: "Seçili Proje 03", title: "Göl Pavyonu / 2025" }
     ],
     intro: "Bu portfolyo; mimarlık eğitimim boyunca geliştirdiğim fikirleri, tasarım süreçlerini, araştırmaları ve temsil denemelerini bir araya getirir.",
     studioTitle: "Mimarlığı, sürekli gelişen bir <em>öğrenme alanı</em> olarak görüyorum.",
@@ -58,16 +58,29 @@ function normalizeContent(content) {
   normalized.settings.contactUrl = normalized.settings.contactUrl || `mailto:${normalized.settings.email}`;
   normalized.settings.socials = Array.isArray(normalized.settings.socials) ? normalized.settings.socials : DEFAULT_CONTENT.settings.socials;
   normalized.settings.skills = Array.isArray(normalized.settings.skills) ? normalized.settings.skills : DEFAULT_CONTENT.settings.skills;
-  normalized.settings.heroFeaturedProjects = Array.isArray(normalized.settings.heroFeaturedProjects)
-    ? normalized.settings.heroFeaturedProjects.slice(0, 3).map((item, index) => ({
+  const oldHeroItems = Array.isArray(normalized.settings.heroFeaturedProjects) ? normalized.settings.heroFeaturedProjects : [];
+  normalized.settings.heroSlides = Array.isArray(normalized.settings.heroSlides)
+    ? normalized.settings.heroSlides.slice(0, 3).map((item, index) => ({
+      image: item.image || item.src || (index === 0 ? normalized.settings.heroImage : DEFAULT_CONTENT.settings.heroSlides[index]?.image) || DEFAULT_CONTENT.settings.heroImage,
       label: item.label || `Seçili Proje ${String(index + 1).padStart(2, "0")}`,
       title: item.title || ""
     }))
-    : DEFAULT_CONTENT.settings.heroFeaturedProjects;
-  while (normalized.settings.heroFeaturedProjects.length < 3) {
-    const next = normalized.settings.heroFeaturedProjects.length + 1;
-    normalized.settings.heroFeaturedProjects.push({ label: `Seçili Proje ${String(next).padStart(2, "0")}`, title: "" });
+    : DEFAULT_CONTENT.settings.heroSlides.map((slide, index) => ({
+      ...slide,
+      image: index === 0 ? (normalized.settings.heroImage || slide.image) : slide.image,
+      label: oldHeroItems[index]?.label || slide.label,
+      title: oldHeroItems[index]?.title || slide.title
+    }));
+  while (normalized.settings.heroSlides.length < 3) {
+    const next = normalized.settings.heroSlides.length;
+    normalized.settings.heroSlides.push({
+      image: DEFAULT_CONTENT.settings.heroSlides[next]?.image || normalized.settings.heroImage || DEFAULT_CONTENT.settings.heroImage,
+      label: `Seçili Proje ${String(next + 1).padStart(2, "0")}`,
+      title: ""
+    });
   }
+  normalized.settings.heroImage = normalized.settings.heroSlides[0]?.image || normalized.settings.heroImage || DEFAULT_CONTENT.settings.heroImage;
+  normalized.settings.heroFeaturedProjects = normalized.settings.heroSlides.map(({ label, title }) => ({ label, title }));
   normalized.projects = Array.isArray(normalized.projects) ? normalized.projects : [];
   return normalized;
 }

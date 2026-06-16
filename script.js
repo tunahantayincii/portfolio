@@ -6,7 +6,6 @@ async function initializeSite() {
 
   const hero = $("#hero-section");
   const heroImage = $("#hero-image");
-  heroImage.src = settings.heroImage;
   $("#hero-location").textContent = settings.heroLocation;
   $("#hero-title").innerHTML = settings.heroTitle;
   $("#intro-text").textContent = settings.intro;
@@ -24,10 +23,33 @@ async function initializeSite() {
   $("#contact-link-text").textContent = settings.contactText || "Tanışalım.";
   const socialLinks = Array.isArray(settings.socials) ? settings.socials.filter((item) => item.label && item.url) : [];
   $("#footer-socials").innerHTML = socialLinks.map((item) => `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.label} ↗</a>`).join("") + `<a href="admin.html">Yönetim Paneli ↗</a>`;
-  const heroFeaturedProjects = Array.isArray(settings.heroFeaturedProjects) ? settings.heroFeaturedProjects.slice(0, 3) : [];
-  $("#hero-featured-projects").innerHTML = heroFeaturedProjects.map((item) => `<div><span>${item.label}</span><span>${item.title}</span></div>`).join("");
-  await heroImage.decode().catch(() => {});
-  hero.classList.add("ready");
+  const heroSlides = Array.isArray(settings.heroSlides) ? settings.heroSlides.slice(0, 3) : [{ image: settings.heroImage, label: "Seçili Proje 01", title: "" }];
+  const heroProjects = $("#hero-featured-projects");
+  let activeHeroSlide = 0;
+
+  heroProjects.innerHTML = heroSlides.map((item, index) => `
+    <button class="hero-project${index === 0 ? " active" : ""}" type="button" data-hero-slide="${index}">
+      <span>${item.label}</span>
+      <span>${item.title}</span>
+    </button>`).join("");
+
+  async function showHeroSlide(index, instant = false) {
+    const slide = heroSlides[index] || heroSlides[0];
+    if (!slide?.image) return;
+    activeHeroSlide = index;
+    heroProjects.querySelectorAll("[data-hero-slide]").forEach((button) => {
+      button.classList.toggle("active", Number(button.dataset.heroSlide) === activeHeroSlide);
+    });
+    if (!instant) hero.classList.remove("ready");
+    heroImage.src = slide.image;
+    await heroImage.decode().catch(() => {});
+    requestAnimationFrame(() => hero.classList.add("ready"));
+  }
+
+  heroProjects.querySelectorAll("[data-hero-slide]").forEach((button) => {
+    button.addEventListener("click", () => showHeroSlide(Number(button.dataset.heroSlide)));
+  });
+  await showHeroSlide(0, true);
 
   const library = $("#project-grid");
   const modal = $("#book-modal");
