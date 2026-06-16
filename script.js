@@ -55,23 +55,6 @@ async function initializeSite() {
   const modal = $("#book-modal");
   let activeProject;
   let spreadIndex = 0;
-  let shelfDragging = false;
-  let shelfDragged = false;
-  let shelfClickLocked = false;
-  let shelfClickLockTimer;
-  let shelfStartX = 0;
-  let shelfScrollLeft = 0;
-
-  function lockShelfClicks() {
-    shelfClickLocked = true;
-    library.classList.add("click-locked");
-    clearTimeout(shelfClickLockTimer);
-    shelfClickLockTimer = setTimeout(() => {
-      shelfClickLocked = false;
-      shelfDragged = false;
-      library.classList.remove("click-locked");
-    }, 2000);
-  }
 
   content.projects.forEach((project, index) => {
     const book = document.createElement("button");
@@ -82,41 +65,17 @@ async function initializeSite() {
       <span class="book-number">${String(index + 1).padStart(2, "0")}</span>
       <span class="book-cover"><img src="${project.cover}" alt="${project.title} kapak görseli"><i></i></span>
       <span class="book-caption"><strong>${project.title}</strong><small>${project.location} · ${project.category} · ${project.year}</small></span>`;
-    book.addEventListener("click", (event) => {
-      if (shelfDragged || shelfClickLocked) {
-        event.preventDefault();
-        return;
-      }
-      openProject(project);
-    });
+    book.addEventListener("click", () => openProject(project));
     library.appendChild(book);
   });
 
-  library.addEventListener("pointerdown", (event) => {
-    if (event.pointerType !== "mouse" || event.button !== 0) return;
-    shelfDragging = true;
-    shelfDragged = false;
-    shelfStartX = event.clientX;
-    shelfScrollLeft = library.scrollLeft;
-    library.classList.add("dragging");
-    library.setPointerCapture?.(event.pointerId);
-  });
-  library.addEventListener("pointermove", (event) => {
-    if (!shelfDragging) return;
-    if (Math.abs(event.clientX - shelfStartX) > 6) shelfDragged = true;
-    library.scrollLeft = shelfScrollLeft - (event.clientX - shelfStartX);
-    if (shelfDragged) event.preventDefault();
-  });
-  ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
-    library.addEventListener(eventName, (event) => {
-      if (!shelfDragging) return;
-      shelfDragging = false;
-      library.classList.remove("dragging");
-      library.releasePointerCapture?.(event.pointerId);
-      if (shelfDragged) lockShelfClicks();
-    });
-  });
-  library.addEventListener("wheel", () => lockShelfClicks(), { passive: true });
+  const scrollShelf = (direction) => {
+    const firstBook = library.querySelector(".project-book");
+    const step = firstBook ? firstBook.getBoundingClientRect().width + 34 : library.clientWidth * .8;
+    library.scrollBy({ left: direction * step, behavior: "smooth" });
+  };
+  $(".shelf-arrow-left").addEventListener("click", () => scrollShelf(-1));
+  $(".shelf-arrow-right").addEventListener("click", () => scrollShelf(1));
 
   function makePages(project) {
     return [
