@@ -120,6 +120,11 @@ async function initializeSite() {
     if (animate) addPageTurnOverlay(direction);
     left.innerHTML = pageMarkup(pages[spreadIndex]);
     right.innerHTML = pageMarkup(pages[spreadIndex + 1]);
+    if (animate) {
+      const revealedPage = window.matchMedia("(max-width: 780px)").matches ? left : (direction > 0 ? right : left);
+      revealedPage.classList.add("page-reveal");
+      revealedPage.addEventListener("animationend", () => revealedPage.classList.remove("page-reveal"), { once: true });
+    }
     $("#page-count").textContent = `${Math.min(spreadIndex + pageStep, pages.length)} / ${pages.length}`;
     $("#page-progress").style.width = `${Math.min(100, ((spreadIndex + pageStep) / pages.length) * 100)}%`;
     $(".reader-nav.prev").disabled = spreadIndex === 0;
@@ -140,7 +145,7 @@ async function initializeSite() {
     setTimeout(() => {
       pageTurnInProgress = false;
       renderSpread(direction, false);
-    }, 760);
+    }, 1040);
   }
 
   function openProject(project) {
