@@ -92,7 +92,7 @@ async function initializeSite() {
 
   function pageMarkup(page) {
     if (!page) return `<div class="blank-page"></div>`;
-    if (page.type === "image") return `<div class="reader-image-frame" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "image") return `<button class="reader-image-frame zoomable-page" type="button" data-zoom-src="${page.page.src}" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"><span class="zoom-hint">Yakınlaştır</span></button><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "end") return `<div class="end-page"><span>${settings.studioName}</span><strong>${page.project.title}</strong><small>${page.project.year}</small></div>`;
     return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
   }
@@ -125,6 +125,9 @@ async function initializeSite() {
       revealedPage.classList.add("page-reveal");
       revealedPage.addEventListener("animationend", () => revealedPage.classList.remove("page-reveal"), { once: true });
     }
+    document.querySelectorAll(".zoomable-page").forEach((button) => {
+      button.addEventListener("click", () => openZoom(button.dataset.zoomSrc));
+    });
     $("#page-count").textContent = `${Math.min(spreadIndex + pageStep, pages.length)} / ${pages.length}`;
     $("#page-progress").style.width = `${Math.min(100, ((spreadIndex + pageStep) / pages.length) * 100)}%`;
     $(".reader-nav.prev").disabled = spreadIndex === 0;
@@ -158,13 +161,33 @@ async function initializeSite() {
     document.body.style.overflow = "hidden";
   }
 
+  function openZoom(src) {
+    if (!src) return;
+    $("#zoom-image").src = src;
+    $("#page-zoom").classList.add("open");
+    $("#page-zoom").setAttribute("aria-hidden", "false");
+  }
+
+  function closeZoom() {
+    $("#page-zoom").classList.remove("open");
+    $("#page-zoom").setAttribute("aria-hidden", "true");
+    $("#zoom-image").removeAttribute("src");
+  }
+
   $(".reader-nav.next").addEventListener("click", () => turnSpread(1));
   $(".reader-nav.prev").addEventListener("click", () => turnSpread(-1));
   $(".book-close").addEventListener("click", () => modal.close());
-  modal.addEventListener("close", () => { document.body.style.overflow = ""; });
+  $(".zoom-close").addEventListener("click", closeZoom);
+  $("#page-zoom").addEventListener("click", (event) => { if (event.target === $("#page-zoom")) closeZoom(); });
+  modal.addEventListener("close", () => { closeZoom(); document.body.style.overflow = ""; });
   modal.addEventListener("click", (event) => { if (event.target === modal) modal.close(); });
   document.addEventListener("keydown", (event) => {
     if (!modal.open) return;
+    if (event.key === "Escape" && $("#page-zoom").classList.contains("open")) {
+      closeZoom();
+      event.preventDefault();
+      return;
+    }
     if (event.key === "ArrowRight" && !$(".reader-nav.next").disabled) $(".reader-nav.next").click();
     if (event.key === "ArrowLeft" && !$(".reader-nav.prev").disabled) $(".reader-nav.prev").click();
   });
