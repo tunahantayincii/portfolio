@@ -55,6 +55,10 @@ async function initializeSite() {
   const modal = $("#book-modal");
   let activeProject;
   let spreadIndex = 0;
+  let shelfDragging = false;
+  let shelfDragged = false;
+  let shelfStartX = 0;
+  let shelfScrollLeft = 0;
 
   content.projects.forEach((project, index) => {
     const book = document.createElement("button");
@@ -65,8 +69,38 @@ async function initializeSite() {
       <span class="book-number">${String(index + 1).padStart(2, "0")}</span>
       <span class="book-cover"><img src="${project.cover}" alt="${project.title} kapak görseli"><i></i></span>
       <span class="book-caption"><strong>${project.title}</strong><small>${project.location} · ${project.category} · ${project.year}</small></span>`;
-    book.addEventListener("click", () => openProject(project));
+    book.addEventListener("click", (event) => {
+      if (shelfDragged) {
+        event.preventDefault();
+        return;
+      }
+      openProject(project);
+    });
     library.appendChild(book);
+  });
+
+  library.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    shelfDragging = true;
+    shelfDragged = false;
+    shelfStartX = event.clientX;
+    shelfScrollLeft = library.scrollLeft;
+    library.classList.add("dragging");
+  });
+  library.addEventListener("pointermove", (event) => {
+    if (!shelfDragging) return;
+    if (Math.abs(event.clientX - shelfStartX) > 6) shelfDragged = true;
+    library.scrollLeft = shelfScrollLeft - (event.clientX - shelfStartX);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((eventName) => {
+    library.addEventListener(eventName, () => {
+      shelfDragging = false;
+      library.classList.toggle("dragging", shelfDragged);
+      setTimeout(() => {
+        shelfDragged = false;
+        library.classList.remove("dragging");
+      }, 0);
+    });
   });
 
   function makePages(project) {
@@ -91,12 +125,14 @@ async function initializeSite() {
   function renderSpread(direction = 1) {
     const pages = makePages(activeProject);
     const pageStep = window.matchMedia("(max-width: 780px)").matches ? 1 : 2;
+    const isMobileReader = window.matchMedia("(max-width: 780px)").matches;
     const left = $("#page-left");
     const right = $("#page-right");
     [left, right].forEach((page) => page.classList.remove("page-turn-next", "page-turn-prev"));
     left.innerHTML = pageMarkup(pages[spreadIndex]);
     right.innerHTML = pageMarkup(pages[spreadIndex + 1]);
-    right.classList.add(direction > 0 ? "page-turn-next" : "page-turn-prev");
+    const turningPage = isMobileReader || direction < 0 ? left : right;
+    turningPage.classList.add(direction > 0 ? "page-turn-next" : "page-turn-prev");
     $("#page-count").textContent = `${Math.min(spreadIndex + pageStep, pages.length)} / ${pages.length}`;
     $("#page-progress").style.width = `${Math.min(100, ((spreadIndex + pageStep) / pages.length) * 100)}%`;
     $(".reader-nav.prev").disabled = spreadIndex === 0;
