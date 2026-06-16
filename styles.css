@@ -39,8 +39,9 @@ img { display: block; width: 100%; }
 .nav-links a:hover::after { width: 100%; }
 .menu-toggle { display: none; }
 
-.hero { position: relative; height: 100svh; min-height: 650px; color: white; overflow: hidden; }
-.hero > img { position: absolute; inset: 0; height: 100%; object-fit: cover; animation: hero-in 1.6s cubic-bezier(.2,.7,.2,1) both; }
+.hero { position: relative; height: 100svh; min-height: 650px; color: white; overflow: hidden; background: #151715; }
+.hero > img { position: absolute; inset: 0; height: 100%; object-fit: cover; opacity: 0; transition: opacity .7s ease; }
+.hero.ready > img { opacity: 1; animation: hero-in 1.6s cubic-bezier(.2,.7,.2,1) both; }
 .hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,7,7,.66), transparent 65%), linear-gradient(0deg, rgba(0,0,0,.35), transparent 45%); }
 .hero-content { position: absolute; left: var(--pad); bottom: 14vh; }
 .eyebrow { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 28px; }
@@ -162,7 +163,7 @@ img { display: block; width: 100%; }
 .studio-heading > p { font-size: 9px; text-transform: uppercase; letter-spacing: .18em; color: var(--accent); margin: 0 0 27px; }
 .studio h2 { font-family: "Manrope", sans-serif; font-size: clamp(38px, 5.8vw, 90px); line-height: 1; letter-spacing: -.065em; font-weight: 300; max-width: 1050px; margin: 0; }
 .studio-details { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 90px; border-top: 1px solid rgba(255,255,255,.2); padding-top: 24px; }
-.studio-details > p { margin: 0; font-size: 13px; line-height: 1.8; color: rgba(255,255,255,.55); max-width: 460px; }
+.studio-details > p { margin: 0; font-size: 13px; line-height: 1.8; color: rgba(255,255,255,.55); max-width: 460px; white-space: pre-wrap; }
 .services { display: grid; grid-template-columns: 30px 1fr; gap: 12px 10px; font-size: 12px; }
 .services span { color: var(--accent); font-size: 8px; padding-top: 4px; }
 .services p { margin: 0; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.13); }

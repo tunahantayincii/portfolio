@@ -4,20 +4,29 @@ async function initializeSite() {
   const content = await getContent();
   const settings = content.settings;
 
-  $("#hero-image").src = settings.heroImage;
+  const hero = $("#hero-section");
+  const heroImage = $("#hero-image");
+  heroImage.src = settings.heroImage;
   $("#hero-location").textContent = settings.heroLocation;
   $("#hero-title").innerHTML = settings.heroTitle;
   $("#intro-text").textContent = settings.intro;
   $("#studio-title").innerHTML = settings.studioTitle;
   $("#studio-description").textContent = settings.studioDescription;
+  const skills = Array.isArray(settings.skills) ? settings.skills.filter(Boolean) : [];
+  $("#skill-list").innerHTML = skills.map((skill, index) => `<span>${String(index + 1).padStart(2, "0")}</span><p>${skill}</p>`).join("");
   $("#footer-name").textContent = settings.studioName;
   $("#footer-address").textContent = settings.address;
   $("#footer-email").textContent = settings.email;
   $("#footer-email").href = `mailto:${settings.email}`;
   $("#footer-phone").textContent = settings.phone;
   $("#footer-phone").href = `tel:${settings.phone.replace(/\s/g, "")}`;
-  $("#contact-email").href = `mailto:${settings.email}`;
+  $("#contact-email").href = settings.contactUrl || `mailto:${settings.email}`;
+  $("#contact-link-text").textContent = settings.contactText || "Tanışalım.";
+  const socialLinks = Array.isArray(settings.socials) ? settings.socials.filter((item) => item.label && item.url) : [];
+  $("#footer-socials").innerHTML = socialLinks.map((item) => `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.label} ↗</a>`).join("") + `<a href="admin.html">Yönetim Paneli ↗</a>`;
   $("#hero-meta").textContent = content.projects.length ? `${content.projects[0].title} / ${content.projects[0].year}` : settings.studioName;
+  await heroImage.decode().catch(() => {});
+  hero.classList.add("ready");
 
   const library = $("#project-grid");
   const modal = $("#book-modal");

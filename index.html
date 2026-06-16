@@ -20,8 +20,8 @@
   </header>
 
   <main>
-    <section class="hero">
-      <img id="hero-image" src="assets/hero-residence.png" alt="Seçili mimari proje" fetchpriority="high">
+    <section class="hero" id="hero-section">
+      <img id="hero-image" alt="Seçili mimari proje" fetchpriority="high">
       <div class="hero-shade"></div>
       <div class="hero-content"><p class="eyebrow" id="hero-location"></p><h1 id="hero-title"></h1></div>
       <div class="hero-meta"><span>Seçili Proje 01</span><span id="hero-meta"></span></div>
@@ -43,18 +43,18 @@
       <div class="studio-heading reveal"><p>Tasarım yaklaşımım</p><h2 id="studio-title"></h2></div>
       <div class="studio-details reveal">
         <p id="studio-description"></p>
-        <div class="services"><span>01</span><p>Araştırma & Konsept</p><span>02</span><p>Eskiz & Maket</p><span>03</span><p>Modelleme & Görselleştirme</p></div>
+        <div class="services" id="skill-list"></div>
       </div>
       <div class="studio-stats reveal"><div><strong>06</strong><span>Akademik proje</span></div><div><strong>04</strong><span>Katıldığım atölye</span></div><div><strong>08</strong><span>Kullandığım araç</span></div></div>
     </section>
 
     <section class="contact section-pad" id="contact">
       <div class="section-index">03 / İletişim</div>
-      <div class="contact-main reveal"><p>Staj, atölye ve işbirliklerine açığım.</p><a id="contact-email" href="#">Tanışalım.<span>↗</span></a></div>
+      <div class="contact-main reveal"><p>Staj, atölye ve işbirliklerine açığım.</p><a id="contact-email" href="#"><span id="contact-link-text">Tanışalım.</span><span>↗</span></a></div>
       <footer>
         <div class="footer-address"><strong id="footer-name"></strong><span id="footer-address"></span></div>
         <div class="footer-links"><a id="footer-email"></a><a id="footer-phone"></a></div>
-        <div class="footer-social"><a href="#">Instagram ↗</a><a href="#">LinkedIn ↗</a><a href="admin.html">Yönetim Paneli ↗</a></div>
+        <div class="footer-social" id="footer-socials"></div>
         <p class="copyright">© 2026 Tunahan Tayıncı Portfolio</p>
       </footer>
     </section>

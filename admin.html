@@ -37,8 +37,17 @@
         <label class="full">Giriş metni<textarea name="intro"></textarea></label>
         <label class="full">Hakkımda başlığı<textarea name="studioTitle"></textarea></label>
         <label class="full">Hakkımda açıklaması<textarea name="studioDescription"></textarea></label>
+        <div class="full list-editor">
+          <div class="list-editor-head"><strong>Hakkımda sağ alan başlıkları</strong><button type="button" id="add-skill">+ Başlık ekle</button></div>
+          <div id="skill-list-editor"></div>
+        </div>
         <label>E-posta<input name="email" type="email"></label><label>Telefon<input name="phone"></label>
+        <label>Tanışalım buton yazısı<input name="contactText"></label><label>Tanışalım linki<input name="contactUrl" placeholder="mailto:... veya https://..."></label>
         <label class="full">Adres<textarea name="address"></textarea></label>
+        <div class="full social-editor">
+          <div class="social-editor-head"><strong>Sosyal medya linkleri</strong><button type="button" id="add-social">+ Sosyal medya ekle</button></div>
+          <div id="social-list"></div>
+        </div>
         <button class="primary" type="submit">Genel içeriği kaydet</button>
       </form>
     </section>

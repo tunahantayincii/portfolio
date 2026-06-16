@@ -16,6 +16,14 @@ function normalizePage(page) {
   };
 }
 
+function normalizeUrl(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  if (/^(https?:|mailto:|tel:)/i.test(trimmed)) return trimmed;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return `mailto:${trimmed}`;
+  return `https://${trimmed}`;
+}
+
 function showPanel() {
   $("#login-screen").classList.add("hidden");
   $("#admin-shell").classList.add("authenticated");
@@ -79,6 +87,53 @@ function fillSettings() {
   });
   pendingHero = content.settings.heroImage;
   $("#hero-preview").src = pendingHero;
+  renderSocialFields();
+  renderSkillFields();
+}
+
+function renderSkillFields() {
+  const list = $("#skill-list-editor");
+  const skills = Array.isArray(content.settings.skills) ? content.settings.skills : [];
+  list.innerHTML = skills.map((skill, index) => `
+    <div class="skill-row">
+      <label>Başlık ${String(index + 1).padStart(2, "0")}<input data-skill-index="${index}" value="${skill || ""}" placeholder="Örn. Modelleme & Görselleştirme"></label>
+      <button type="button" data-remove-skill="${index}">Sil</button>
+    </div>`).join("");
+  document.querySelectorAll("[data-remove-skill]").forEach((button) => button.addEventListener("click", () => {
+    content.settings.skills.splice(Number(button.dataset.removeSkill), 1);
+    renderSkillFields();
+    status("Başlık kaldırıldı. Kaydetmeyi unutmayın.");
+  }));
+}
+
+function collectSkillFields() {
+  content.settings.skills = [...document.querySelectorAll("[data-skill-index]")]
+    .map((input) => input.value.trim())
+    .filter(Boolean);
+}
+
+function renderSocialFields() {
+  const list = $("#social-list");
+  const socials = Array.isArray(content.settings.socials) ? content.settings.socials : [];
+  list.innerHTML = socials.map((social, index) => `
+    <div class="social-row">
+      <label>Başlık<input data-social-label="${index}" value="${social.label || ""}" placeholder="LinkedIn"></label>
+      <label>Link<input data-social-url="${index}" value="${social.url || ""}" placeholder="https://..."></label>
+      <button type="button" data-remove-social="${index}">Sil</button>
+    </div>`).join("");
+  document.querySelectorAll("[data-remove-social]").forEach((button) => button.addEventListener("click", () => {
+    content.settings.socials.splice(Number(button.dataset.removeSocial), 1);
+    renderSocialFields();
+    status("Sosyal link kaldırıldı. Kaydetmeyi unutmayın.");
+  }));
+}
+
+function collectSocialFields() {
+  content.settings.socials = [...document.querySelectorAll(".social-row")].map((row) => {
+    const label = row.querySelector("[data-social-label]").value.trim();
+    const url = normalizeUrl(row.querySelector("[data-social-url]").value);
+    return { label, url };
+  }).filter((item) => item.label && item.url);
 }
 
 function renderProjects() {
@@ -180,9 +235,12 @@ $("#settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   Object.keys(content.settings).forEach((key) => {
-    if (key !== "heroImage" && data.has(key)) content.settings[key] = data.get(key).trim();
+    if (key !== "heroImage" && key !== "socials" && key !== "skills" && data.has(key)) content.settings[key] = data.get(key).trim();
   });
   content.settings.heroImage = pendingHero;
+  content.settings.contactUrl = normalizeUrl(content.settings.contactUrl || content.settings.email);
+  collectSkillFields();
+  collectSocialFields();
   await persist("Genel içerik kaydedildi");
 });
 
@@ -235,6 +293,16 @@ $("#project-form").addEventListener("submit", async (event) => {
 });
 
 $("#add-project").addEventListener("click", () => openEditor());
+$("#add-social").addEventListener("click", () => {
+  content.settings.socials = Array.isArray(content.settings.socials) ? content.settings.socials : [];
+  content.settings.socials.push({ label: "", url: "" });
+  renderSocialFields();
+});
+$("#add-skill").addEventListener("click", () => {
+  content.settings.skills = Array.isArray(content.settings.skills) ? content.settings.skills : [];
+  content.settings.skills.push("");
+  renderSkillFields();
+});
 $("#close-editor").addEventListener("click", () => $("#project-editor").close());
 $("#delete-project").addEventListener("click", async () => {
   const id = $("#project-form").elements.id.value;

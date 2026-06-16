@@ -10,8 +10,19 @@ const DEFAULT_CONTENT = {
     studioTitle: "Mimarlığı, sürekli gelişen bir <em>öğrenme alanı</em> olarak görüyorum.",
     studioDescription: "Mekân, malzeme ve kullanıcı deneyimi üzerine çalışan bir mimarlık öğrencisiyim. Tasarım sürecimde araştırma, eskiz, maket ve dijital üretimi birlikte kullanıyor; her projeyi yeni sorular sormak için bir fırsat olarak görüyorum.",
     email: "hello@tunahantayinci.com",
+    contactText: "Tanışalım.",
+    contactUrl: "mailto:hello@tunahantayinci.com",
     phone: "+90 555 000 00 00",
-    address: "İstanbul, Türkiye"
+    address: "İstanbul, Türkiye",
+    skills: [
+      "Araştırma & Konsept",
+      "Eskiz & Maket",
+      "Modelleme & Görselleştirme"
+    ],
+    socials: [
+      { label: "LinkedIn", url: "https://www.linkedin.com/" },
+      { label: "Instagram", url: "https://www.instagram.com/" }
+    ]
   },
   projects: [
     {
@@ -35,16 +46,27 @@ const DEFAULT_CONTENT = {
   ]
 };
 
+function normalizeContent(content) {
+  const normalized = structuredClone(content || DEFAULT_CONTENT);
+  normalized.settings = { ...DEFAULT_CONTENT.settings, ...(normalized.settings || {}) };
+  normalized.settings.contactText = normalized.settings.contactText || "Tanışalım.";
+  normalized.settings.contactUrl = normalized.settings.contactUrl || `mailto:${normalized.settings.email}`;
+  normalized.settings.socials = Array.isArray(normalized.settings.socials) ? normalized.settings.socials : DEFAULT_CONTENT.settings.socials;
+  normalized.settings.skills = Array.isArray(normalized.settings.skills) ? normalized.settings.skills : DEFAULT_CONTENT.settings.skills;
+  normalized.projects = Array.isArray(normalized.projects) ? normalized.projects : [];
+  return normalized;
+}
+
 function getLocalContent() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || structuredClone(DEFAULT_CONTENT); }
-  catch { return structuredClone(DEFAULT_CONTENT); }
+  try { return normalizeContent(JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_CONTENT); }
+  catch { return normalizeContent(DEFAULT_CONTENT); }
 }
 
 async function getContent() {
   try {
     const response = await fetch("/api/content", { headers: { "Accept": "application/json" } });
     if (response.ok) {
-      const content = await response.json();
+      const content = normalizeContent(await response.json());
       localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
       return content;
     }
