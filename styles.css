@@ -216,7 +216,7 @@ img { display: block; width: 100%; }
 .contact-main a { display: inline-flex; align-items: flex-start; gap: clamp(14px, 2vw, 28px); font-family: "Manrope", sans-serif; font-size: clamp(72px, 9vw, 150px); letter-spacing: -.08em; line-height: .86; border-bottom: 2px solid var(--ink); white-space: nowrap; }
 .contact-main #contact-link-text { display: inline-block; color: var(--ink); }
 .contact-main .contact-arrow { display: inline-block; font-size: .22em; line-height: 1; margin-top: .08em; color: #829400; }
-footer { border-top: 1px solid var(--line); margin-top: 78px; padding: 28px 0 0; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; font-size: clamp(12px, .9vw, 15px); line-height: 1.9; }
+footer { border-bottom: 1px solid var(--line); margin-top: 78px; padding: 0 0 28px; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; font-size: clamp(12px, .9vw, 15px); line-height: 1.9; }
 footer div { display: flex; flex-direction: column; }
 .copyright { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #777; }
 
