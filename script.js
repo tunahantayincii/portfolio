@@ -55,6 +55,7 @@ async function initializeSite() {
   const modal = $("#book-modal");
   let activeProject;
   let spreadIndex = 0;
+  let pageTurnInProgress = false;
 
   content.projects.forEach((project, index) => {
     const book = document.createElement("button");
@@ -96,21 +97,50 @@ async function initializeSite() {
     return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
   }
 
-  function renderSpread(direction = 1) {
+  function addPageTurnOverlay(direction) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const book = document.querySelector(".open-book");
+    const isMobileReader = window.matchMedia("(max-width: 780px)").matches;
+    const source = isMobileReader || direction < 0 ? $("#page-left") : $("#page-right");
+    const overlay = source.cloneNode(true);
+    overlay.removeAttribute("id");
+    overlay.classList.remove("page-left", "page-right", "page-turn-next", "page-turn-prev");
+    overlay.classList.add("page-turn-overlay", direction > 0 ? "page-flip-next" : "page-flip-prev");
+    if (isMobileReader) overlay.classList.add("single-page-flip");
+    book.appendChild(overlay);
+    overlay.addEventListener("animationend", () => overlay.remove(), { once: true });
+  }
+
+  function renderSpread(direction = 1, animate = false) {
     const pages = makePages(activeProject);
     const pageStep = window.matchMedia("(max-width: 780px)").matches ? 1 : 2;
-    const isMobileReader = window.matchMedia("(max-width: 780px)").matches;
     const left = $("#page-left");
     const right = $("#page-right");
     [left, right].forEach((page) => page.classList.remove("page-turn-next", "page-turn-prev"));
+    if (animate) addPageTurnOverlay(direction);
     left.innerHTML = pageMarkup(pages[spreadIndex]);
     right.innerHTML = pageMarkup(pages[spreadIndex + 1]);
-    const turningPage = isMobileReader || direction < 0 ? left : right;
-    turningPage.classList.add(direction > 0 ? "page-turn-next" : "page-turn-prev");
     $("#page-count").textContent = `${Math.min(spreadIndex + pageStep, pages.length)} / ${pages.length}`;
     $("#page-progress").style.width = `${Math.min(100, ((spreadIndex + pageStep) / pages.length) * 100)}%`;
     $(".reader-nav.prev").disabled = spreadIndex === 0;
     $(".reader-nav.next").disabled = spreadIndex + pageStep >= pages.length;
+  }
+
+  function turnSpread(direction) {
+    if (pageTurnInProgress) return;
+    const pages = makePages(activeProject);
+    const pageStep = window.matchMedia("(max-width: 780px)").matches ? 1 : 2;
+    const nextIndex = direction > 0 ? spreadIndex + pageStep : Math.max(0, spreadIndex - pageStep);
+    if (nextIndex < 0 || nextIndex === spreadIndex || nextIndex >= pages.length) return;
+    pageTurnInProgress = true;
+    spreadIndex = nextIndex;
+    renderSpread(direction, true);
+    $(".reader-nav.prev").disabled = true;
+    $(".reader-nav.next").disabled = true;
+    setTimeout(() => {
+      pageTurnInProgress = false;
+      renderSpread(direction, false);
+    }, 760);
   }
 
   function openProject(project) {
@@ -123,8 +153,8 @@ async function initializeSite() {
     document.body.style.overflow = "hidden";
   }
 
-  $(".reader-nav.next").addEventListener("click", () => { spreadIndex += window.matchMedia("(max-width: 780px)").matches ? 1 : 2; renderSpread(1); });
-  $(".reader-nav.prev").addEventListener("click", () => { spreadIndex = Math.max(0, spreadIndex - (window.matchMedia("(max-width: 780px)").matches ? 1 : 2)); renderSpread(-1); });
+  $(".reader-nav.next").addEventListener("click", () => turnSpread(1));
+  $(".reader-nav.prev").addEventListener("click", () => turnSpread(-1));
   $(".book-close").addEventListener("click", () => modal.close());
   modal.addEventListener("close", () => { document.body.style.overflow = ""; });
   modal.addEventListener("click", (event) => { if (event.target === modal) modal.close(); });
