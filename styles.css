@@ -79,6 +79,7 @@ img { display: block; width: 100%; }
   scrollbar-color: rgba(26,26,24,.45) transparent;
 }
 .book-library.dragging { cursor: grabbing; user-select: none; scroll-snap-type: none; }
+.book-library.click-locked .project-book { pointer-events: none; }
 .book-library::-webkit-scrollbar { height: 7px; }
 .book-library::-webkit-scrollbar-track { background: transparent; }
 .book-library::-webkit-scrollbar-thumb { background: rgba(26,26,24,.35); border-radius: 999px; }
@@ -93,7 +94,6 @@ img { display: block; width: 100%; }
   cursor: pointer;
   scroll-snap-align: start;
 }
-.book-library.dragging .project-book { pointer-events: none; }
 .project-book:nth-child(even) { transform: translateY(70px); }
 .book-number { display: block; font-size: 11px; letter-spacing: .14em; margin-bottom: 13px; }
 .book-cover {
