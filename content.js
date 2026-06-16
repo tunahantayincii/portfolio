@@ -6,6 +6,11 @@ const DEFAULT_CONTENT = {
     heroTitle: "Düşünüyor,<br><em>çiziyor</em> ve üretiyorum.",
     heroLocation: "Mimarlık Öğrencisi · İstanbul",
     heroImage: "assets/hero-residence.png",
+    heroFeaturedProjects: [
+      { label: "Seçili Proje 01", title: "Mazı Konutu / 2023" },
+      { label: "Seçili Proje 02", title: "Avlu Sanat Merkezi / 2024" },
+      { label: "Seçili Proje 03", title: "Göl Pavyonu / 2025" }
+    ],
     intro: "Bu portfolyo; mimarlık eğitimim boyunca geliştirdiğim fikirleri, tasarım süreçlerini, araştırmaları ve temsil denemelerini bir araya getirir.",
     studioTitle: "Mimarlığı, sürekli gelişen bir <em>öğrenme alanı</em> olarak görüyorum.",
     studioDescription: "Mekân, malzeme ve kullanıcı deneyimi üzerine çalışan bir mimarlık öğrencisiyim. Tasarım sürecimde araştırma, eskiz, maket ve dijital üretimi birlikte kullanıyor; her projeyi yeni sorular sormak için bir fırsat olarak görüyorum.",
@@ -53,6 +58,16 @@ function normalizeContent(content) {
   normalized.settings.contactUrl = normalized.settings.contactUrl || `mailto:${normalized.settings.email}`;
   normalized.settings.socials = Array.isArray(normalized.settings.socials) ? normalized.settings.socials : DEFAULT_CONTENT.settings.socials;
   normalized.settings.skills = Array.isArray(normalized.settings.skills) ? normalized.settings.skills : DEFAULT_CONTENT.settings.skills;
+  normalized.settings.heroFeaturedProjects = Array.isArray(normalized.settings.heroFeaturedProjects)
+    ? normalized.settings.heroFeaturedProjects.slice(0, 3).map((item, index) => ({
+      label: item.label || `Seçili Proje ${String(index + 1).padStart(2, "0")}`,
+      title: item.title || ""
+    }))
+    : DEFAULT_CONTENT.settings.heroFeaturedProjects;
+  while (normalized.settings.heroFeaturedProjects.length < 3) {
+    const next = normalized.settings.heroFeaturedProjects.length + 1;
+    normalized.settings.heroFeaturedProjects.push({ label: `Seçili Proje ${String(next).padStart(2, "0")}`, title: "" });
+  }
   normalized.projects = Array.isArray(normalized.projects) ? normalized.projects : [];
   return normalized;
 }

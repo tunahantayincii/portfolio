@@ -24,7 +24,8 @@ async function initializeSite() {
   $("#contact-link-text").textContent = settings.contactText || "Tanışalım.";
   const socialLinks = Array.isArray(settings.socials) ? settings.socials.filter((item) => item.label && item.url) : [];
   $("#footer-socials").innerHTML = socialLinks.map((item) => `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.label} ↗</a>`).join("") + `<a href="admin.html">Yönetim Paneli ↗</a>`;
-  $("#hero-meta").textContent = content.projects.length ? `${content.projects[0].title} / ${content.projects[0].year}` : settings.studioName;
+  const heroFeaturedProjects = Array.isArray(settings.heroFeaturedProjects) ? settings.heroFeaturedProjects.slice(0, 3) : [];
+  $("#hero-featured-projects").innerHTML = heroFeaturedProjects.map((item) => `<div><span>${item.label}</span><span>${item.title}</span></div>`).join("");
   await heroImage.decode().catch(() => {});
   hero.classList.add("ready");
 

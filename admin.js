@@ -89,6 +89,24 @@ function fillSettings() {
   $("#hero-preview").src = pendingHero;
   renderSocialFields();
   renderSkillFields();
+  renderHeroFeaturedFields();
+}
+
+function renderHeroFeaturedFields() {
+  const list = $("#hero-featured-list");
+  const items = Array.isArray(content.settings.heroFeaturedProjects) ? content.settings.heroFeaturedProjects.slice(0, 3) : [];
+  list.innerHTML = items.map((item, index) => `
+    <div class="hero-featured-row">
+      <label>Sol yazı ${index + 1}<input data-hero-featured-label="${index}" value="${item.label || ""}" placeholder="Seçili Proje 01"></label>
+      <label>Proje adı ${index + 1}<input data-hero-featured-title="${index}" value="${item.title || ""}" placeholder="Mazı Konutu / 2023"></label>
+    </div>`).join("");
+}
+
+function collectHeroFeaturedFields() {
+  content.settings.heroFeaturedProjects = [0, 1, 2].map((index) => ({
+    label: document.querySelector(`[data-hero-featured-label="${index}"]`)?.value.trim() || `Seçili Proje ${String(index + 1).padStart(2, "0")}`,
+    title: document.querySelector(`[data-hero-featured-title="${index}"]`)?.value.trim() || ""
+  }));
 }
 
 function renderSkillFields() {
@@ -235,9 +253,10 @@ $("#settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   Object.keys(content.settings).forEach((key) => {
-    if (key !== "heroImage" && key !== "socials" && key !== "skills" && data.has(key)) content.settings[key] = data.get(key).trim();
+    if (key !== "heroImage" && key !== "socials" && key !== "skills" && key !== "heroFeaturedProjects" && data.has(key)) content.settings[key] = data.get(key).trim();
   });
   content.settings.heroImage = pendingHero;
+  collectHeroFeaturedFields();
   content.settings.contactUrl = normalizeUrl(content.settings.contactUrl || content.settings.email);
   collectSkillFields();
   collectSocialFields();
