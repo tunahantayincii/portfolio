@@ -26,6 +26,7 @@ async function initializeSite() {
   const heroSlides = Array.isArray(settings.heroSlides) ? settings.heroSlides.slice(0, 3) : [{ image: settings.heroImage, label: "Seçili Proje 01", title: "" }];
   const heroProjects = $("#hero-featured-projects");
   let activeHeroSlide = 0;
+  let heroSlideTimer;
 
   heroProjects.innerHTML = heroSlides.map((item, index) => `
     <button class="hero-project${index === 0 ? " active" : ""}" type="button" data-hero-slide="${index}">
@@ -34,9 +35,10 @@ async function initializeSite() {
     </button>`).join("");
 
   async function showHeroSlide(index, instant = false) {
-    const slide = heroSlides[index] || heroSlides[0];
+    const slideIndex = ((index % heroSlides.length) + heroSlides.length) % heroSlides.length;
+    const slide = heroSlides[slideIndex] || heroSlides[0];
     if (!slide?.image) return;
-    activeHeroSlide = index;
+    activeHeroSlide = slideIndex;
     heroProjects.querySelectorAll("[data-hero-slide]").forEach((button) => {
       button.classList.toggle("active", Number(button.dataset.heroSlide) === activeHeroSlide);
     });
@@ -46,10 +48,20 @@ async function initializeSite() {
     requestAnimationFrame(() => hero.classList.add("ready"));
   }
 
+  function startHeroSlider() {
+    clearInterval(heroSlideTimer);
+    if (heroSlides.length < 2) return;
+    heroSlideTimer = setInterval(() => showHeroSlide(activeHeroSlide + 1), 5000);
+  }
+
   heroProjects.querySelectorAll("[data-hero-slide]").forEach((button) => {
-    button.addEventListener("click", () => showHeroSlide(Number(button.dataset.heroSlide)));
+    button.addEventListener("click", async () => {
+      await showHeroSlide(Number(button.dataset.heroSlide));
+      startHeroSlider();
+    });
   });
   await showHeroSlide(0, true);
+  startHeroSlider();
 
   const library = $("#project-grid");
   const modal = $("#book-modal");

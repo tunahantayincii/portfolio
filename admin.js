@@ -112,9 +112,15 @@ $("#login-form").addEventListener("submit", async (event) => {
 
 $("#logout-button").addEventListener("click", logout);
 
+document.addEventListener("mousedown", (event) => {
+  if (event.target.closest(".format-toolbar button")) event.preventDefault();
+});
+
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".format-toolbar button");
   if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
   const toolbar = button.closest(".format-toolbar");
   applyTextFormat(getFormatTarget(toolbar.dataset.formatFor), button);
 });
