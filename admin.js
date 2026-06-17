@@ -59,28 +59,54 @@ async function initializePanel() {
   renderProjects();
 }
 
+async function hasActiveSession() {
+  try {
+    const response = await fetch("/api/auth/session", {
+      credentials: "same-origin",
+      headers: { "Accept": "application/json" }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function logout() {
-  try { await fetch("/api/auth/logout", { method: "POST" }); }
+  try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); }
   finally { location.reload(); }
 }
 
 $("#login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const form = event.currentTarget;
   const data = new FormData(event.currentTarget);
+  const submitButton = form.querySelector("button[type='submit']");
   $("#login-error").textContent = "Giriş kontrol ediliyor...";
+  if (submitButton) submitButton.disabled = true;
   try {
     const response = await fetch("/api/auth/login", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: data.get("username").trim(), password: data.get("password") })
     });
-    if (!response.ok) throw new Error("invalid");
-    event.currentTarget.reset();
+    const sessionActive = await hasActiveSession();
+    if (!response.ok && !sessionActive) throw new Error("invalid");
+    if (response.ok && !sessionActive) throw new Error("session");
+    form.reset();
     $("#login-error").textContent = "";
-    initializePanel();
+    try {
+      await initializePanel();
+    } catch {
+      $("#login-error").textContent = "Giriş başarılı, ancak panel içeriği yüklenemedi. Sayfayı yenileyin.";
+    }
     return;
-  } catch {
-    $("#login-error").textContent = "Kullanıcı adı veya şifre yanlış.";
+  } catch (error) {
+    $("#login-error").textContent = error.message === "session"
+      ? "Giriş yapıldı ama oturum doğrulanamadı. Sayfayı yenileyip tekrar deneyin."
+      : "Kullanıcı adı veya şifre yanlış.";
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 });
 
@@ -483,8 +509,7 @@ $("#reset-data").addEventListener("click", async () => {
 
 async function checkSession() {
   try {
-    const response = await fetch("/api/auth/session", { headers: { "Accept": "application/json" } });
-    if (response.ok) initializePanel();
+    if (await hasActiveSession()) await initializePanel();
   } catch {
     $("#login-error").textContent = "Güvenli giriş servisine ulaşılamadı.";
   }
