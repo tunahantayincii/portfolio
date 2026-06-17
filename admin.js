@@ -112,10 +112,48 @@ $("#login-form").addEventListener("submit", async (event) => {
 
 $("#logout-button").addEventListener("click", logout);
 
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".format-toolbar button");
+  if (!button) return;
+  const toolbar = button.closest(".format-toolbar");
+  applyTextFormat(getFormatTarget(toolbar.dataset.formatFor), button);
+});
+
 function status(message, error = false) {
   const node = $("#save-status");
   node.textContent = message;
   node.style.color = error ? "#9c3030" : "#667700";
+}
+
+function getFormatTarget(target) {
+  return document.getElementById(target) || document.querySelector(`[name="${target}"]`);
+}
+
+function applyTextFormat(textarea, button) {
+  if (!textarea) return;
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? start;
+  const selected = textarea.value.slice(start, end);
+  let replacement = "";
+  let selectionStart = start;
+  let selectionEnd = start;
+
+  if (button.dataset.formatTag) {
+    const tag = button.dataset.formatTag;
+    const text = selected || "metin";
+    replacement = `<${tag}>${text}</${tag}>`;
+    selectionStart = start + tag.length + 2;
+    selectionEnd = selectionStart + text.length;
+  } else if (button.dataset.formatInsert === "br") {
+    replacement = selected ? `${selected}<br>` : "<br>";
+    selectionStart = start + replacement.length;
+    selectionEnd = selectionStart;
+  }
+
+  textarea.focus();
+  textarea.setRangeText(replacement, start, end, "end");
+  textarea.setSelectionRange(selectionStart, selectionEnd);
+  status("Biçim uygulandı. Kaydetmeyi unutmayın.");
 }
 
 async function persist(message = "Kaydedildi") {

@@ -32,14 +32,14 @@
       <form id="settings-form" class="form-grid">
         <label>Ad / Portfolyo adı<input name="studioName"></label>
         <label>Öğrenci bilgisi / Konum<input name="heroLocation"></label>
-        <label class="full">Ana başlık <small>İtalik alan için &lt;em&gt;metin&lt;/em&gt; kullanabilirsiniz.</small><textarea name="heroTitle"></textarea></label>
+        <label class="full rich-field">Ana başlık <small>Kelimeyi seçip aşağıdaki butonlarla biçimlendirebilirsiniz.</small><span class="format-toolbar" data-format-for="heroTitle"><button type="button" data-format-tag="em">İtalik</button><button type="button" data-format-tag="strong">Kalın</button><button type="button" data-format-insert="br">Alt satır</button></span><textarea name="heroTitle"></textarea></label>
         <label class="full upload-field">1. hero görseli<input id="hero-upload" type="file" accept="image/*"><span>Görsel seç</span><img id="hero-preview"></label>
         <div class="full hero-featured-editor">
           <div class="list-editor-head"><strong>Hero proje alanları</strong><small>3 ayrı hero görseli seçin. Her görselin altında kendi sıra/etiket ve proje adı görünür.</small></div>
           <div id="hero-featured-list"></div>
         </div>
         <label class="full">Giriş metni<textarea name="intro"></textarea></label>
-        <label class="full">Hakkımda başlığı<textarea name="studioTitle"></textarea></label>
+        <label class="full rich-field">Hakkımda başlığı<span class="format-toolbar" data-format-for="studioTitle"><button type="button" data-format-tag="em">İtalik</button><button type="button" data-format-tag="strong">Kalın</button><button type="button" data-format-insert="br">Alt satır</button></span><textarea name="studioTitle"></textarea></label>
         <label class="full">Hakkımda açıklaması<textarea name="studioDescription"></textarea></label>
         <div class="full list-editor">
           <div class="list-editor-head"><strong>Hakkımda sağ alan başlıkları</strong><button type="button" id="add-skill">+ Başlık ekle</button></div>
@@ -109,7 +109,7 @@
         <label>Üst küçük yazı<input id="text-page-kicker" placeholder="Örn. Konsept Notu"></label>
         <label>Arka plan rengi<input id="text-page-background" type="color" value="#e8e4da"></label>
         <label class="full">Başlık<input id="text-page-title" placeholder="Sayfa başlığı"></label>
-        <label class="full">Metin<textarea id="text-page-body" placeholder="Bu sayfada görünmesini istediğiniz metni yazın."></textarea></label>
+        <label class="full rich-field">Metin<span class="format-toolbar" data-format-for="text-page-body"><button type="button" data-format-tag="em">İtalik</button><button type="button" data-format-tag="strong">Kalın</button><button type="button" data-format-insert="br">Alt satır</button></span><textarea id="text-page-body" placeholder="Bu sayfada görünmesini istediğiniz metni yazın."></textarea></label>
         <button class="primary" type="button" id="save-text-page-settings">Metni uygula</button>
       </div>
     </div>
