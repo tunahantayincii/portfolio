@@ -119,6 +119,7 @@ document.addEventListener("mousedown", (event) => {
 document.addEventListener("click", (event) => {
   const button = event.target.closest(".format-toolbar button");
   if (!button) return;
+  if (!isPointerInsideElement(event, button)) return;
   event.preventDefault();
   event.stopPropagation();
   const toolbar = button.closest(".format-toolbar");
@@ -135,6 +136,15 @@ function getFormatTarget(target) {
   return document.getElementById(target) || document.querySelector(`[name="${target}"]`);
 }
 
+function isPointerInsideElement(event, element) {
+  if (!event.clientX && !event.clientY) return true;
+  const rect = element.getBoundingClientRect();
+  return event.clientX >= rect.left
+    && event.clientX <= rect.right
+    && event.clientY >= rect.top
+    && event.clientY <= rect.bottom;
+}
+
 function applyTextFormat(textarea, button) {
   if (!textarea) return;
   const start = textarea.selectionStart ?? textarea.value.length;
@@ -145,8 +155,13 @@ function applyTextFormat(textarea, button) {
   let selectionEnd = start;
 
   if (button.dataset.formatTag) {
+    if (!selected) {
+      textarea.focus();
+      status("Önce biçimlendirmek istediğiniz kelimeyi seçin.", true);
+      return;
+    }
     const tag = button.dataset.formatTag;
-    const text = selected || "metin";
+    const text = selected;
     replacement = `<${tag}>${text}</${tag}>`;
     selectionStart = start + tag.length + 2;
     selectionEnd = selectionStart + text.length;
