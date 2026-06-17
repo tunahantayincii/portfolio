@@ -24,6 +24,11 @@ const DEFAULT_CONTENT = {
       "Eskiz & Maket",
       "Modelleme & Görselleştirme"
     ],
+    stats: [
+      { value: "06", label: "Akademik proje" },
+      { value: "04", label: "Katıldığım atölye" },
+      { value: "08", label: "Kullandığım araç" }
+    ],
     socials: [
       { label: "LinkedIn", url: "https://www.linkedin.com/" },
       { label: "Instagram", url: "https://www.instagram.com/" }
@@ -58,6 +63,12 @@ function normalizeContent(content) {
   normalized.settings.contactUrl = normalized.settings.contactUrl || `mailto:${normalized.settings.email}`;
   normalized.settings.socials = Array.isArray(normalized.settings.socials) ? normalized.settings.socials : DEFAULT_CONTENT.settings.socials;
   normalized.settings.skills = Array.isArray(normalized.settings.skills) ? normalized.settings.skills : DEFAULT_CONTENT.settings.skills;
+  normalized.settings.stats = Array.isArray(normalized.settings.stats)
+    ? normalized.settings.stats.map((item, index) => ({
+      value: item.value || DEFAULT_CONTENT.settings.stats[index]?.value || "",
+      label: item.label || DEFAULT_CONTENT.settings.stats[index]?.label || ""
+    }))
+    : DEFAULT_CONTENT.settings.stats;
   const oldHeroItems = Array.isArray(normalized.settings.heroFeaturedProjects) ? normalized.settings.heroFeaturedProjects : [];
   normalized.settings.heroSlides = Array.isArray(normalized.settings.heroSlides)
     ? normalized.settings.heroSlides.slice(0, 3).map((item, index) => ({

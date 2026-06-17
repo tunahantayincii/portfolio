@@ -13,6 +13,8 @@ async function initializeSite() {
   $("#studio-description").textContent = settings.studioDescription;
   const skills = Array.isArray(settings.skills) ? settings.skills.filter(Boolean) : [];
   $("#skill-list").innerHTML = skills.map((skill, index) => `<span>${String(index + 1).padStart(2, "0")}</span><p>${skill}</p>`).join("");
+  const stats = Array.isArray(settings.stats) ? settings.stats.filter((item) => item.value || item.label) : [];
+  $("#studio-stats").innerHTML = stats.map((item) => `<div><strong>${item.value || ""}</strong><span>${item.label || ""}</span></div>`).join("");
   $("#footer-name").textContent = settings.studioName;
   $("#footer-address").textContent = settings.address;
   $("#footer-email").textContent = settings.email;

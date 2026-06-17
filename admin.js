@@ -197,6 +197,7 @@ function fillSettings() {
   $("#hero-preview").src = pendingHero;
   renderSocialFields();
   renderSkillFields();
+  renderStatsFields();
   renderHeroFeaturedFields();
 }
 
@@ -258,6 +259,35 @@ function collectSkillFields() {
   content.settings.skills = [...document.querySelectorAll("[data-skill-index]")]
     .map((input) => input.value.trim())
     .filter(Boolean);
+}
+
+function renderStatsFields() {
+  const list = $("#stats-list-editor");
+  const defaults = [
+    { value: "06", label: "Akademik proje" },
+    { value: "04", label: "Katıldığım atölye" },
+    { value: "08", label: "Kullandığım araç" }
+  ];
+  const stats = Array.isArray(content.settings.stats) ? content.settings.stats : defaults;
+  content.settings.stats = stats;
+  list.innerHTML = stats.map((stat, index) => `
+    <div class="stat-row">
+      <label>Sayı ${String(index + 1).padStart(2, "0")}<input data-stat-value="${index}" value="${stat.value || ""}" placeholder="06"></label>
+      <label>Açıklama ${String(index + 1).padStart(2, "0")}<input data-stat-label="${index}" value="${stat.label || ""}" placeholder="Akademik proje"></label>
+      <button type="button" data-remove-stat="${index}">Sil</button>
+    </div>`).join("");
+  document.querySelectorAll("[data-remove-stat]").forEach((button) => button.addEventListener("click", () => {
+    content.settings.stats.splice(Number(button.dataset.removeStat), 1);
+    renderStatsFields();
+    status("İstatistik kaldırıldı. Kaydetmeyi unutmayın.");
+  }));
+}
+
+function collectStatsFields() {
+  content.settings.stats = [...document.querySelectorAll(".stat-row")].map((row) => ({
+    value: row.querySelector("[data-stat-value]")?.value.trim() || "",
+    label: row.querySelector("[data-stat-label]")?.value.trim() || ""
+  })).filter((item) => item.value || item.label);
 }
 
 function renderSocialFields() {
@@ -447,12 +477,13 @@ $("#settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   Object.keys(content.settings).forEach((key) => {
-    if (key !== "heroImage" && key !== "heroSlides" && key !== "socials" && key !== "skills" && key !== "heroFeaturedProjects" && data.has(key)) content.settings[key] = data.get(key).trim();
+    if (key !== "heroImage" && key !== "heroSlides" && key !== "socials" && key !== "skills" && key !== "stats" && key !== "heroFeaturedProjects" && data.has(key)) content.settings[key] = data.get(key).trim();
   });
   getHeroSlides()[0].image = pendingHero;
   collectHeroFeaturedFields();
   content.settings.contactUrl = normalizeUrl(content.settings.contactUrl || content.settings.email);
   collectSkillFields();
+  collectStatsFields();
   collectSocialFields();
   await persist("Genel içerik kaydedildi");
 });
@@ -528,6 +559,12 @@ $("#add-skill").addEventListener("click", () => {
   content.settings.skills = Array.isArray(content.settings.skills) ? content.settings.skills : [];
   content.settings.skills.push("");
   renderSkillFields();
+});
+$("#add-stat").addEventListener("click", () => {
+  content.settings.stats = Array.isArray(content.settings.stats) ? content.settings.stats : [];
+  content.settings.stats.push({ value: "", label: "" });
+  renderStatsFields();
+  status("Yeni istatistik eklendi. Kaydetmeyi unutmayın.");
 });
 $("#close-editor").addEventListener("click", () => $("#project-editor").close());
 $("#delete-project").addEventListener("click", async () => {
