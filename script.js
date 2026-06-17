@@ -81,11 +81,13 @@ async function initializeSite() {
   function makePages(project) {
     return [
       { type: "intro", project },
-      ...(project.pages || []).map((page, index) => ({
-        type: "image",
-        page: typeof page === "string" ? { src: page, fit: "cover", position: "center", background: "#e8e4da" } : page,
-        number: index + 1
-      })),
+      ...(project.pages || []).map((page, index) => page?.type === "text"
+        ? { type: "text", page, number: index + 1 }
+        : {
+          type: "image",
+          page: typeof page === "string" ? { src: page, fit: "cover", position: "center", background: "#e8e4da" } : page,
+          number: index + 1
+        }),
       { type: "end", project }
     ];
   }
@@ -93,22 +95,9 @@ async function initializeSite() {
   function pageMarkup(page) {
     if (!page) return `<div class="blank-page"></div>`;
     if (page.type === "image") return `<button class="reader-image-frame zoomable-page" type="button" data-zoom-src="${page.page.src}" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"><span class="zoom-hint">Yakınlaştır</span></button><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "text") return `<div class="reader-text-page" style="background:${page.page.background || "#e8e4da"}"><span>${page.page.kicker || "Not"}</span><h3>${page.page.title || "Metin sayfası"}</h3><p>${page.page.body || ""}</p></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "end") return `<div class="end-page"><span>${settings.studioName}</span><strong>${page.project.title}</strong><small>${page.project.year}</small></div>`;
     return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
-  }
-
-  function addPageTurnOverlay(direction) {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const book = document.querySelector(".open-book");
-    const isMobileReader = window.matchMedia("(max-width: 780px)").matches;
-    const source = isMobileReader || direction < 0 ? $("#page-left") : $("#page-right");
-    const overlay = source.cloneNode(true);
-    overlay.removeAttribute("id");
-    overlay.classList.remove("page-left", "page-right", "page-turn-next", "page-turn-prev");
-    overlay.classList.add("page-turn-overlay", direction > 0 ? "page-flip-next" : "page-flip-prev");
-    if (isMobileReader) overlay.classList.add("single-page-flip");
-    book.appendChild(overlay);
-    overlay.addEventListener("animationend", () => overlay.remove(), { once: true });
   }
 
   function renderSpread(direction = 1, animate = false) {
@@ -116,14 +105,16 @@ async function initializeSite() {
     const pageStep = window.matchMedia("(max-width: 780px)").matches ? 1 : 2;
     const left = $("#page-left");
     const right = $("#page-right");
-    [left, right].forEach((page) => page.classList.remove("page-turn-next", "page-turn-prev"));
-    if (animate) addPageTurnOverlay(direction);
+    [left, right].forEach((page) => page.classList.remove("page-slide-in-next", "page-slide-in-prev"));
     left.innerHTML = pageMarkup(pages[spreadIndex]);
     right.innerHTML = pageMarkup(pages[spreadIndex + 1]);
     if (animate) {
-      const revealedPage = window.matchMedia("(max-width: 780px)").matches ? left : (direction > 0 ? right : left);
-      revealedPage.classList.add("page-reveal");
-      revealedPage.addEventListener("animationend", () => revealedPage.classList.remove("page-reveal"), { once: true });
+      const animationClass = direction > 0 ? "page-slide-in-next" : "page-slide-in-prev";
+      const targets = window.matchMedia("(max-width: 780px)").matches ? [left] : [left, right];
+      targets.forEach((page) => {
+        page.classList.add(animationClass);
+        page.addEventListener("animationend", () => page.classList.remove(animationClass), { once: true });
+      });
     }
     document.querySelectorAll(".zoomable-page").forEach((button) => {
       button.addEventListener("click", () => openZoom(button.dataset.zoomSrc));
@@ -148,7 +139,7 @@ async function initializeSite() {
     setTimeout(() => {
       pageTurnInProgress = false;
       renderSpread(direction, false);
-    }, 1040);
+    }, 520);
   }
 
   function openProject(project) {

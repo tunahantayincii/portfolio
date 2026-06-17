@@ -57,7 +57,7 @@
     </section>
 
     <section class="panel" id="projects">
-      <div class="project-toolbar"><p>Projeler kitap olarak gösterilir. Kapak ve iç sayfaları buradan yönetin.</p><button class="primary" id="add-project" type="button">+ Yeni proje</button></div>
+      <div class="project-toolbar"><p>Projeler kitap olarak gösterilir. Kapak, iç sayfalar ve sıralamayı buradan yönetin. Kartları sürükleyebilir veya oklarla sıralayabilirsiniz.</p><button class="primary" id="add-project" type="button">+ Yeni proje</button></div>
       <div class="admin-projects" id="admin-projects"></div>
     </section>
 
@@ -80,7 +80,7 @@
         <label class="full upload-field">Kitap kapak görseli<input id="cover-upload" type="file" accept="image/*"><span>Kapak seç</span><img id="cover-preview"></label>
         <div class="full page-editor-head">
           <div><strong>Kitap sayfaları</strong><small>Sayfaları sürükleyerek sıralayın. Görsele tıklayarak yerleşimini düzenleyin.</small></div>
-          <button type="button" id="open-media-library">Medya havuzundan seç</button>
+          <div class="page-editor-actions"><button type="button" id="add-text-page">+ Metin sayfası</button><button type="button" id="open-media-library">Medya havuzundan seç</button></div>
         </div>
         <label class="full upload-field">Yeni görseller yükle<input id="pages-upload" type="file" accept="image/*" multiple><span>Birden fazla görsel seçebilirsiniz</span></label>
         <div class="full page-previews" id="page-previews"></div>
@@ -99,6 +99,18 @@
           <label>Sayfa arka planı<input id="page-background" type="color" value="#e8e4da"></label>
           <button class="primary" type="button" id="save-page-settings">Yerleşimi uygula</button>
         </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="text-page-settings">
+    <div class="page-settings-content">
+      <div class="dialog-head"><h2>Metin Sayfası</h2><button type="button" id="close-text-page-settings">×</button></div>
+      <div class="form-grid">
+        <label>Üst küçük yazı<input id="text-page-kicker" placeholder="Örn. Konsept Notu"></label>
+        <label>Arka plan rengi<input id="text-page-background" type="color" value="#e8e4da"></label>
+        <label class="full">Başlık<input id="text-page-title" placeholder="Sayfa başlığı"></label>
+        <label class="full">Metin<textarea id="text-page-body" placeholder="Bu sayfada görünmesini istediğiniz metni yazın."></textarea></label>
+        <button class="primary" type="button" id="save-text-page-settings">Metni uygula</button>
       </div>
     </div>
   </dialog>

@@ -4,11 +4,20 @@ let editingCover = "";
 let pendingHero = "";
 let editingPageIndex = -1;
 let draggedPageIndex = -1;
+let draggedProjectIndex = -1;
 const $ = (selector) => document.querySelector(selector);
 
 function normalizePage(page) {
-  if (typeof page === "string") return { src: page, fit: "cover", position: "center", background: "#e8e4da" };
+  if (typeof page === "string") return { type: "image", src: page, fit: "cover", position: "center", background: "#e8e4da" };
+  if (page.type === "text") return {
+    type: "text",
+    kicker: page.kicker || "",
+    title: page.title || "Yeni metin sayfası",
+    body: page.body || "",
+    background: page.background || "#e8e4da"
+  };
   return {
+    type: "image",
     src: page.src || page.image || "",
     fit: page.fit === "contain" ? "contain" : "cover",
     position: page.position || "center",
@@ -190,26 +199,76 @@ function collectSocialFields() {
   }).filter((item) => item.label && item.url);
 }
 
+async function saveProjectOrder(message = "Proje sırası kaydedildi") {
+  renderProjects();
+  await persist(message);
+}
+
 function renderProjects() {
   const container = $("#admin-projects");
   container.innerHTML = "";
-  content.projects.forEach((project) => {
-    const card = document.createElement("button");
+  content.projects.forEach((project, index) => {
+    const card = document.createElement("article");
     card.className = "admin-project";
-    card.type = "button";
+    card.draggable = true;
+    card.dataset.projectIndex = index;
     card.innerHTML = `<img src="${project.cover}" alt=""><strong>${project.title}</strong><small>${project.location} · ${project.year} · ${(project.pages || []).length} sayfa</small>`;
-    card.addEventListener("click", () => openEditor(project.id));
+    card.insertAdjacentHTML("beforeend", `
+      <div class="project-order-actions">
+        <span>Sıra ${String(index + 1).padStart(2, "0")}</span>
+        <button type="button" data-move-project="${index}" data-direction="-1" ${index === 0 ? "disabled" : ""}>← Öne al</button>
+        <button type="button" data-move-project="${index}" data-direction="1" ${index === content.projects.length - 1 ? "disabled" : ""}>Arkaya al →</button>
+      </div>`);
+    card.addEventListener("click", (event) => {
+      if (event.target.closest(".project-order-actions")) return;
+      openEditor(project.id);
+    });
     container.appendChild(card);
+  });
+  document.querySelectorAll("[data-move-project]").forEach((button) => button.addEventListener("click", async () => {
+    const from = Number(button.dataset.moveProject);
+    const to = from + Number(button.dataset.direction);
+    if (to < 0 || to >= content.projects.length) return;
+    [content.projects[from], content.projects[to]] = [content.projects[to], content.projects[from]];
+    await saveProjectOrder();
+  }));
+  document.querySelectorAll(".admin-project").forEach((card) => {
+    card.addEventListener("dragstart", () => {
+      draggedProjectIndex = Number(card.dataset.projectIndex);
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend", () => {
+      draggedProjectIndex = -1;
+      document.querySelectorAll(".admin-project").forEach((item) => item.classList.remove("dragging", "drag-over"));
+    });
+    card.addEventListener("dragover", (event) => { event.preventDefault(); card.classList.add("drag-over"); });
+    card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+    card.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      const targetIndex = Number(card.dataset.projectIndex);
+      if (draggedProjectIndex < 0 || draggedProjectIndex === targetIndex) return;
+      const [moved] = content.projects.splice(draggedProjectIndex, 1);
+      content.projects.splice(targetIndex, 0, moved);
+      draggedProjectIndex = -1;
+      await saveProjectOrder();
+    });
   });
 }
 
 function renderPagePreviews() {
   $("#page-previews").innerHTML = editingPages.map((page, index) => `
     <div class="page-preview" draggable="true" data-page-index="${index}">
-      <div class="page-preview-visual" style="--page-bg:${page.background};--page-fit:${page.fit};--page-position:${page.position}">
-        <img src="${page.src}" alt="Sayfa ${index + 1}"><span class="page-preview-number">${index + 1}</span>
-      </div>
-      <div class="page-preview-actions"><button type="button" data-move-page="${index}" data-direction="-1" aria-label="Sola taşı">←</button><button type="button" data-edit-page="${index}">Yerleşim</button><button type="button" data-move-page="${index}" data-direction="1" aria-label="Sağa taşı">→</button><button class="remove-page" type="button" data-remove-page="${index}">Sil</button></div>
+      ${page.type === "text" ? `
+        <div class="page-preview-visual text-page-preview" style="--page-bg:${page.background}">
+          <span class="page-preview-number">${index + 1}</span>
+          <small>${page.kicker || "Metin sayfası"}</small>
+          <strong>${page.title || "Başlıksız"}</strong>
+          <p>${page.body || ""}</p>
+        </div>` : `
+        <div class="page-preview-visual" style="--page-bg:${page.background};--page-fit:${page.fit};--page-position:${page.position}">
+          <img src="${page.src}" alt="Sayfa ${index + 1}"><span class="page-preview-number">${index + 1}</span>
+        </div>`}
+      <div class="page-preview-actions"><button type="button" data-move-page="${index}" data-direction="-1" aria-label="Sola taşı">←</button><button type="button" data-edit-page="${index}">${page.type === "text" ? "Metin" : "Yerleşim"}</button><button type="button" data-move-page="${index}" data-direction="1" aria-label="Sağa taşı">→</button><button class="remove-page" type="button" data-remove-page="${index}">Sil</button></div>
     </div>`).join("");
   document.querySelectorAll("[data-remove-page]").forEach((button) => button.addEventListener("click", () => {
     editingPages.splice(Number(button.dataset.removePage), 1);
@@ -256,12 +315,26 @@ function updateLayoutPreview() {
 function openPageSettings(index) {
   editingPageIndex = index;
   const page = editingPages[index];
+  if (page.type === "text") {
+    openTextPageSettings(index);
+    return;
+  }
   $("#layout-preview-image").src = page.src;
   $("#page-fit").value = page.fit;
   $("#page-position").value = page.position;
   $("#page-background").value = page.background;
   updateLayoutPreview();
   $("#page-settings").showModal();
+}
+
+function openTextPageSettings(index) {
+  editingPageIndex = index;
+  const page = editingPages[index];
+  $("#text-page-kicker").value = page.kicker || "";
+  $("#text-page-title").value = page.title || "";
+  $("#text-page-body").value = page.body || "";
+  $("#text-page-background").value = page.background || "#e8e4da";
+  $("#text-page-settings").showModal();
 }
 
 function openEditor(id = "") {
@@ -350,6 +423,17 @@ $("#project-form").addEventListener("submit", async (event) => {
 });
 
 $("#add-project").addEventListener("click", () => openEditor());
+$("#add-text-page").addEventListener("click", () => {
+  editingPages.push(normalizePage({
+    type: "text",
+    kicker: "Not",
+    title: "Yeni metin sayfası",
+    body: "",
+    background: "#e8e4da"
+  }));
+  renderPagePreviews();
+  status("Metin sayfası eklendi. Projeyi kaydetmeyi unutmayın.");
+});
 $("#add-social").addEventListener("click", () => {
   content.settings.socials = Array.isArray(content.settings.socials) ? content.settings.socials : [];
   content.settings.socials.push({ label: "", url: "" });
@@ -421,6 +505,20 @@ $("#save-page-settings").addEventListener("click", () => {
   renderPagePreviews();
   $("#page-settings").close();
   status("Sayfa yerleşimi güncellendi. Projeyi kaydetmeyi unutmayın.");
+});
+$("#close-text-page-settings").addEventListener("click", () => $("#text-page-settings").close());
+$("#save-text-page-settings").addEventListener("click", () => {
+  if (editingPageIndex < 0) return;
+  editingPages[editingPageIndex] = normalizePage({
+    type: "text",
+    kicker: $("#text-page-kicker").value.trim(),
+    title: $("#text-page-title").value.trim() || "Metin sayfası",
+    body: $("#text-page-body").value.trim(),
+    background: $("#text-page-background").value
+  });
+  renderPagePreviews();
+  $("#text-page-settings").close();
+  status("Metin sayfası güncellendi. Projeyi kaydetmeyi unutmayın.");
 });
 
 $("#close-media-library").addEventListener("click", () => $("#media-library").close());
