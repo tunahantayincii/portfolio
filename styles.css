@@ -166,10 +166,10 @@ img { display: block; width: 100%; }
 .folio { position: absolute; right: 15px; bottom: 12px; background: rgba(0,0,0,.55); color: white; padding: 6px 8px; font-size: 11px; }
 .page-zoom { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: clamp(18px, 4vw, 56px); background: rgba(5,6,6,.86); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .28s ease, visibility .28s ease; backdrop-filter: blur(12px); }
 .page-zoom.open { opacity: 1; visibility: visible; pointer-events: auto; }
-.zoom-viewport { width: 94vw; height: 86vh; display: grid; place-items: center; overflow: hidden; cursor: zoom-in; touch-action: none; }
+.zoom-viewport { width: 94vw; height: 82vh; display: grid; place-items: center; overflow: hidden; cursor: zoom-in; touch-action: none; }
 .zoom-viewport.zoomed { cursor: grab; }
 .zoom-viewport.dragging { cursor: grabbing; }
-.page-zoom img { width: auto; max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 28px 80px rgba(0,0,0,.55); animation: zoom-in .32s cubic-bezier(.2,.7,.2,1) both; transform-origin: center; user-select: none; -webkit-user-drag: none; will-change: transform; }
+.page-zoom img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: contain; filter: drop-shadow(0 28px 40px rgba(0,0,0,.55)); animation: zoom-in .32s cubic-bezier(.2,.7,.2,1) both; transform-origin: center; user-select: none; -webkit-user-drag: none; will-change: transform; }
 .zoom-caption { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); color: rgba(255,255,255,.62); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; white-space: nowrap; }
 .zoom-close { position: absolute; z-index: 2; top: 24px; right: var(--pad); width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.28); background: transparent; color: white; font-size: 26px; cursor: pointer; }
 .zoom-controls { position: absolute; z-index: 3; right: var(--pad); bottom: 20px; display: flex; align-items: center; gap: 7px; padding: 7px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(12,13,12,.72); backdrop-filter: blur(12px); }
@@ -294,7 +294,7 @@ footer div { display: flex; flex-direction: column; }
   .intro-page, .end-page { padding: 28px; }
   .reader-nav { width: 36px; height: 36px; }
   .zoom-hint { opacity: 1; transform: none; font-size: 9px; }
-  .zoom-viewport { width: 96vw; height: 78vh; }
+  .zoom-viewport { width: 96vw; height: 74vh; }
   .zoom-caption { display: none; }
   .zoom-controls { right: 50%; bottom: 18px; transform: translateX(50%); }
   .project-grid { grid-template-columns: 1fr; row-gap: 75px; padding-bottom: 100px; }
