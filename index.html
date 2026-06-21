@@ -78,8 +78,16 @@
     <div class="reader-progress"><span id="page-count"></span><i><b id="page-progress"></b></i></div>
     <div class="page-zoom" id="page-zoom" aria-hidden="true">
       <button class="zoom-close" type="button" aria-label="Yakınlaştırmayı kapat">×</button>
-      <img id="zoom-image" alt="Yakınlaştırılmış proje sayfası">
-      <span>Görseli kapatmak için tıklayın</span>
+      <div class="zoom-viewport" id="zoom-viewport">
+        <img id="zoom-image" alt="Yakınlaştırılmış proje sayfası">
+      </div>
+      <div class="zoom-controls" aria-label="Görsel yakınlaştırma kontrolleri">
+        <button id="zoom-out" type="button" aria-label="Uzaklaştır">−</button>
+        <output id="zoom-level" aria-live="polite">100%</output>
+        <button id="zoom-in" type="button" aria-label="Yakınlaştır">+</button>
+        <button id="zoom-reset" type="button" aria-label="Yakınlaştırmayı sıfırla">Sıfırla</button>
+      </div>
+      <span class="zoom-caption">Yakınlaştırın ve sürükleyerek çizimde gezinin</span>
     </div>
   </dialog>
 

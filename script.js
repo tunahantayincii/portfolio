@@ -67,9 +67,21 @@ async function initializeSite() {
 
   const library = $("#project-grid");
   const modal = $("#book-modal");
+  const zoomOverlay = $("#page-zoom");
+  const zoomViewport = $("#zoom-viewport");
+  const zoomImage = $("#zoom-image");
+  const zoomLevel = $("#zoom-level");
   let activeProject;
   let spreadIndex = 0;
   let pageTurnInProgress = false;
+  let imageZoom = 1;
+  let imageX = 0;
+  let imageY = 0;
+  let zoomPointerId = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragImageX = 0;
+  let dragImageY = 0;
 
   content.projects.forEach((project, index) => {
     const book = document.createElement("button");
@@ -168,22 +180,78 @@ async function initializeSite() {
 
   function openZoom(src) {
     if (!src) return;
-    $("#zoom-image").src = src;
-    $("#page-zoom").classList.add("open");
-    $("#page-zoom").setAttribute("aria-hidden", "false");
+    zoomImage.src = src;
+    resetImageZoom();
+    zoomOverlay.classList.add("open");
+    zoomOverlay.setAttribute("aria-hidden", "false");
   }
 
   function closeZoom() {
-    $("#page-zoom").classList.remove("open");
-    $("#page-zoom").setAttribute("aria-hidden", "true");
-    $("#zoom-image").removeAttribute("src");
+    zoomOverlay.classList.remove("open");
+    zoomOverlay.setAttribute("aria-hidden", "true");
+    zoomImage.removeAttribute("src");
+    resetImageZoom();
+  }
+
+  function renderImageZoom() {
+    zoomImage.style.transform = `translate3d(${imageX}px, ${imageY}px, 0) scale(${imageZoom})`;
+    zoomLevel.value = `${Math.round(imageZoom * 100)}%`;
+    zoomLevel.textContent = zoomLevel.value;
+    zoomViewport.classList.toggle("zoomed", imageZoom > 1);
+  }
+
+  function setImageZoom(nextZoom) {
+    imageZoom = Math.min(5, Math.max(1, nextZoom));
+    if (imageZoom === 1) {
+      imageX = 0;
+      imageY = 0;
+    }
+    renderImageZoom();
+  }
+
+  function resetImageZoom() {
+    imageZoom = 1;
+    imageX = 0;
+    imageY = 0;
+    renderImageZoom();
   }
 
   $(".reader-nav.next").addEventListener("click", () => turnSpread(1));
   $(".reader-nav.prev").addEventListener("click", () => turnSpread(-1));
   $(".book-close").addEventListener("click", () => modal.close());
   $(".zoom-close").addEventListener("click", closeZoom);
-  $("#page-zoom").addEventListener("click", (event) => { if (event.target === $("#page-zoom")) closeZoom(); });
+  $("#zoom-in").addEventListener("click", () => setImageZoom(imageZoom + .5));
+  $("#zoom-out").addEventListener("click", () => setImageZoom(imageZoom - .5));
+  $("#zoom-reset").addEventListener("click", resetImageZoom);
+  zoomOverlay.addEventListener("click", (event) => { if (event.target === zoomOverlay) closeZoom(); });
+  zoomViewport.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    setImageZoom(imageZoom + (event.deltaY < 0 ? .25 : -.25));
+  }, { passive: false });
+  zoomViewport.addEventListener("dblclick", () => setImageZoom(imageZoom > 1 ? 1 : 2));
+  zoomViewport.addEventListener("pointerdown", (event) => {
+    if (imageZoom <= 1) return;
+    zoomPointerId = event.pointerId;
+    dragStartX = event.clientX;
+    dragStartY = event.clientY;
+    dragImageX = imageX;
+    dragImageY = imageY;
+    zoomViewport.setPointerCapture(event.pointerId);
+    zoomViewport.classList.add("dragging");
+  });
+  zoomViewport.addEventListener("pointermove", (event) => {
+    if (zoomPointerId !== event.pointerId) return;
+    imageX = dragImageX + event.clientX - dragStartX;
+    imageY = dragImageY + event.clientY - dragStartY;
+    renderImageZoom();
+  });
+  const stopImageDrag = (event) => {
+    if (zoomPointerId !== event.pointerId) return;
+    zoomPointerId = null;
+    zoomViewport.classList.remove("dragging");
+  };
+  zoomViewport.addEventListener("pointerup", stopImageDrag);
+  zoomViewport.addEventListener("pointercancel", stopImageDrag);
   modal.addEventListener("close", () => { closeZoom(); document.body.style.overflow = ""; });
   modal.addEventListener("click", (event) => { if (event.target === modal) modal.close(); });
   document.addEventListener("keydown", (event) => {
