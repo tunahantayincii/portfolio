@@ -80,7 +80,11 @@
         <label>Proje adı<input name="title" required></label><label>Yıl<input name="year" required></label>
         <label>Ders / Stüdyo<input name="location" required></label><label>Proje türü<input name="category" required></label>
         <label>Kitap rengi<input name="color" type="color"></label>
-        <label class="full">Proje açıklaması<textarea name="description"></textarea></label>
+        <label class="full description-field">
+          Proje açıklaması
+          <textarea name="description" id="project-description" maxlength="500"></textarea>
+          <small class="character-limit"><span id="description-count">0</span> / 500 karakter</small>
+        </label>
         <label class="full upload-field">Kitap kapak görseli<input id="cover-upload" type="file" accept="image/*"><span>Kapak seç</span><img id="cover-preview"></label>
         <div class="full page-editor-head">
           <div><strong>Kitap sayfaları</strong><small>Sayfaları sürükleyerek sıralayın. Görsele tıklayarak yerleşimini düzenleyin.</small></div>

@@ -5,6 +5,7 @@ let pendingHero = "";
 let editingPageIndex = -1;
 let draggedPageIndex = -1;
 let draggedProjectIndex = -1;
+const PROJECT_DESCRIPTION_LIMIT = 500;
 const $ = (selector) => document.querySelector(selector);
 
 function normalizePage(page) {
@@ -130,6 +131,17 @@ function status(message, error = false) {
   const node = $("#save-status");
   node.textContent = message;
   node.style.color = error ? "#9c3030" : "#667700";
+}
+
+function updateDescriptionCount() {
+  const textarea = $("#project-description");
+  const counter = $("#description-count");
+  const limitText = counter?.closest(".character-limit");
+  if (!textarea || !counter || !limitText) return;
+  const length = textarea.value.length;
+  counter.textContent = length;
+  limitText.classList.toggle("limit-near", length >= PROJECT_DESCRIPTION_LIMIT * .9 && length < PROJECT_DESCRIPTION_LIMIT);
+  limitText.classList.toggle("limit-full", length >= PROJECT_DESCRIPTION_LIMIT);
 }
 
 function getFormatTarget(target) {
@@ -458,6 +470,7 @@ function openEditor(id = "") {
   };
   const form = $("#project-form");
   ["id", "title", "year", "location", "category", "color", "description"].forEach((field) => { form.elements[field].value = project[field]; });
+  updateDescriptionCount();
   editingCover = project.cover;
   editingPages = (project.pages || []).map(normalizePage);
   $("#cover-preview").src = editingCover;
@@ -465,6 +478,8 @@ function openEditor(id = "") {
   renderPagePreviews();
   $("#project-editor").showModal();
 }
+
+$("#project-description").addEventListener("input", updateDescriptionCount);
 
 document.querySelectorAll("aside nav button").forEach((button) => button.addEventListener("click", () => {
   document.querySelectorAll("aside nav button,.panel").forEach((node) => node.classList.remove("active"));
@@ -527,6 +542,12 @@ $("#project-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(event.currentTarget);
   const project = Object.fromEntries(["id", "title", "year", "location", "category", "color", "description"].map((key) => [key, data.get(key).trim()]));
+  if (project.description.length > PROJECT_DESCRIPTION_LIMIT) {
+    status(`Proje açıklaması en fazla ${PROJECT_DESCRIPTION_LIMIT} karakter olabilir.`, true);
+    $("#project-description").focus();
+    updateDescriptionCount();
+    return;
+  }
   project.cover = editingCover;
   project.pages = [...editingPages];
   const index = content.projects.findIndex((item) => item.id === project.id);
