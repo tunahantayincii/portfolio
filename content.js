@@ -158,11 +158,10 @@ function fileToDataUrl(file) {
 }
 
 async function uploadFile(file, prefix = "project") {
-  const dataUrl = await fileToDataUrl(file);
-  const response = await fetch("/api/media", {
+  const response = await fetch(`/api/media?prefix=${encodeURIComponent(prefix)}&name=${encodeURIComponent(file.name || "file")}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dataUrl, prefix })
+    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: file
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
