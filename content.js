@@ -173,11 +173,27 @@ async function uploadFile(file, prefix = "project") {
   return result.url;
 }
 
+async function uploadPdf(file, prefix = "pages") {
+  const response = await fetch("/api/media", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: "pdf",
+      dataUrl: await fileToDataUrl(file),
+      prefix,
+      name: file.name || "document.pdf"
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
+  return result.url;
+}
+
 async function uploadImage(dataUrl, prefix = "project") {
   const response = await fetch("/api/media", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ dataUrl, prefix })
+    body: JSON.stringify({ kind: "image", dataUrl, prefix })
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
