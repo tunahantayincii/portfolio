@@ -159,6 +159,9 @@ function fileToDataUrl(file) {
 
 async function uploadFile(file, prefix = "project") {
   const isPdf = file.type === "application/pdf" || (file.name || "").toLowerCase().endsWith(".pdf");
+  if (isPdf) {
+    return uploadImage(await fileToDataUrl(file), prefix);
+  }
   const endpoint = "/api/media";
   const response = await fetch(`${endpoint}?prefix=${encodeURIComponent(prefix)}&name=${encodeURIComponent(file.name || "file")}`, {
     method: "POST",
