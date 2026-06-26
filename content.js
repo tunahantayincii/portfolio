@@ -165,6 +165,9 @@ async function uploadFile(file, prefix = "project") {
     body: file
   });
   const result = await response.json().catch(() => ({}));
+  if (!response.ok && isPdf && file.size <= 5 * 1024 * 1024) {
+    return uploadImage(await fileToDataUrl(file), prefix);
+  }
   if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
   return result.url;
 }
