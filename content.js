@@ -147,6 +147,28 @@ function imageFileToDataUrl(file, maxSize = 1800, quality = .82) {
   });
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve("");
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadFile(file, prefix = "project") {
+  const dataUrl = await fileToDataUrl(file);
+  const response = await fetch("/api/media", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dataUrl, prefix })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
+  return result.url;
+}
+
 async function uploadImage(dataUrl, prefix = "project") {
   const response = await fetch("/api/media", {
     method: "POST",

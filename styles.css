@@ -186,6 +186,9 @@ img { display: block; width: 100%; }
 .reader-text-page span { font-size: 11px; text-transform: uppercase; letter-spacing: .13em; color: #778500; margin-bottom: 26px; }
 .reader-text-page h3 { font-family: "Manrope", sans-serif; font-size: clamp(32px,4vw,64px); line-height: .98; letter-spacing: -.06em; font-weight: 300; margin: 0 0 26px; }
 .reader-text-page p { margin: 0; font-size: 16px; line-height: 1.75; white-space: pre-wrap; max-width: 520px; }
+.reader-pdf-page { position: relative; height: 100%; padding: 0; overflow: hidden; }
+.reader-pdf-page iframe { width: 100%; height: 100%; border: 0; background: white; }
+.reader-pdf-page a { position: absolute; left: 14px; bottom: 14px; z-index: 2; background: rgba(0,0,0,.64); color: white; padding: 8px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
 .end-page { text-align: center; gap: 20px; }
 .end-page strong { font-family: "Manrope"; font-size: clamp(32px,4vw,65px); letter-spacing: -.06em; font-weight: 300; }
 .reader-nav { width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); color: white; background: transparent; font-size: 18px; cursor: pointer; }

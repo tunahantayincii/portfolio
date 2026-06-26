@@ -17,6 +17,12 @@ function normalizePage(page) {
     body: page.body || "",
     background: page.background || "#e8e4da"
   };
+  if (page.type === "pdf") return {
+    type: "pdf",
+    src: page.src || page.url || "",
+    title: page.title || "PDF sayfası",
+    background: page.background || "#e8e4da"
+  };
   return {
     type: "image",
     src: page.src || page.image || "",
@@ -110,6 +116,30 @@ $("#login-form").addEventListener("submit", async (event) => {
     if (submitButton) submitButton.disabled = false;
   }
 });
+
+$("#open-media-library").addEventListener("click", async (event) => {
+  event.stopImmediatePropagation();
+  const grid = $("#media-grid");
+  grid.innerHTML = "<p>Medya havuzu yükleniyor...</p>";
+  $("#media-library").showModal();
+  try {
+    const response = await fetch("/api/media");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Medya havuzu yüklenemedi");
+    grid.innerHTML = result.items.length ? result.items.map((item, index) => {
+      const isPdf = item.url.toLowerCase().endsWith(".pdf");
+      return `<button class="media-item ${isPdf ? "pdf-media-item" : ""}" type="button" data-media-index="${index}">${isPdf ? "<strong>PDF</strong>" : `<img src="${item.url}" alt="">`}<span>${item.prefix}</span></button>`;
+    }).join("") : "<p>Henüz yüklenmiş medya yok.</p>";
+    document.querySelectorAll("[data-media-index]").forEach((button) => button.addEventListener("click", () => {
+      const item = result.items[Number(button.dataset.mediaIndex)];
+      editingPages.push(normalizePage(item.url.toLowerCase().endsWith(".pdf") ? { type: "pdf", src: item.url, title: item.name } : item.url));
+      renderPagePreviews();
+      status("Medya kitap sayfalarına eklendi");
+    }));
+  } catch (error) {
+    grid.innerHTML = `<p>${error.message}</p>`;
+  }
+}, true);
 
 $("#logout-button").addEventListener("click", logout);
 
@@ -391,6 +421,11 @@ function renderPagePreviews() {
           <small>${page.kicker || "Metin sayfası"}</small>
           <strong>${page.title || "Başlıksız"}</strong>
           <p>${page.body || ""}</p>
+        </div>` : page.type === "pdf" ? `
+        <div class="page-preview-visual pdf-page-preview" style="--page-bg:${page.background || "#e8e4da"}">
+          <span class="page-preview-number">${index + 1}</span>
+          <strong>PDF</strong>
+          <small>${page.title || "PDF sayfası"}</small>
         </div>` : `
         <div class="page-preview-visual" style="--page-bg:${page.background};--page-fit:${page.fit};--page-position:${page.position}">
           <img src="${page.src}" alt="Sayfa ${index + 1}"><span class="page-preview-number">${index + 1}</span>
@@ -442,6 +477,10 @@ function updateLayoutPreview() {
 function openPageSettings(index) {
   editingPageIndex = index;
   const page = editingPages[index];
+  if (page.type === "pdf") {
+    window.open(page.src, "_blank", "noopener,noreferrer");
+    return;
+  }
   if (page.type === "text") {
     openTextPageSettings(index);
     return;
@@ -528,9 +567,16 @@ $("#cover-upload").addEventListener("change", async (event) => {
 $("#pages-upload").addEventListener("change", async (event) => {
   status("Sayfalar hazırlanıyor...");
   try {
-    const dataUrls = await Promise.all([...event.target.files].map((file) => imageFileToDataUrl(file, 1800)));
     const newPages = [];
-    for (const dataUrl of dataUrls) newPages.push(normalizePage(await uploadImage(dataUrl, "pages")));
+    for (const file of [...event.target.files]) {
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        const src = await uploadFile(file, "pages");
+        newPages.push(normalizePage({ type: "pdf", src, title: file.name.replace(/\.pdf$/i, "") }));
+      } else {
+        const dataUrl = await imageFileToDataUrl(file, 1800);
+        newPages.push(normalizePage(await uploadImage(dataUrl, "pages")));
+      }
+    }
     editingPages.push(...newPages);
     renderPagePreviews();
     status("Kaydetmeye hazır");

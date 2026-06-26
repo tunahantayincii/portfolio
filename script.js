@@ -107,13 +107,15 @@ async function initializeSite() {
   function makePages(project) {
     return [
       { type: "intro", project },
-      ...(project.pages || []).map((page, index) => page?.type === "text"
-        ? { type: "text", page, number: index + 1 }
-        : {
+      ...(project.pages || []).map((page, index) => {
+        if (page?.type === "text") return { type: "text", page, number: index + 1 };
+        if (page?.type === "pdf") return { type: "pdf", page, number: index + 1 };
+        return {
           type: "image",
           page: typeof page === "string" ? { src: page, fit: "cover", position: "center", background: "#e8e4da" } : page,
           number: index + 1
-        }),
+        };
+      }),
       { type: "end", project }
     ];
   }
@@ -122,6 +124,7 @@ async function initializeSite() {
     if (!page) return `<div class="blank-page"></div>`;
     if (page.type === "image") return `<button class="reader-image-frame zoomable-page" type="button" data-zoom-src="${page.page.src}" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"><span class="zoom-hint">Yakınlaştır</span></button><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "text") return `<div class="reader-text-page" style="background:${page.page.background || "#e8e4da"}"><span>${page.page.kicker || "Not"}</span><h3>${page.page.title || "Metin sayfası"}</h3><p>${page.page.body || ""}</p></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "pdf") return `<div class="reader-pdf-page" style="background:${page.page.background || "#e8e4da"}"><iframe src="${page.page.src}#toolbar=0&navpanes=0&view=FitH" title="${page.page.title || "PDF proje sayfası"}"></iframe><a href="${page.page.src}" target="_blank" rel="noopener noreferrer">PDF'yi yeni sekmede aç ↗</a></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "end") return `<div class="end-page"><span>${settings.studioName}</span><strong>${page.project.title}</strong><small>${page.project.year}</small></div>`;
     return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
   }
