@@ -424,8 +424,10 @@ function renderPagePreviews() {
         </div>` : page.type === "pdf" ? `
         <div class="page-preview-visual pdf-page-preview" style="--page-bg:${page.background || "#e8e4da"}">
           <span class="page-preview-number">${index + 1}</span>
-          <strong>PDF</strong>
-          <small>${page.title || "PDF sayfası"}</small>
+          <object data="${page.src}" type="application/pdf" aria-label="${page.title || "PDF sayfası"}">
+            <strong>PDF</strong>
+            <small>${page.title || "PDF sayfası"}</small>
+          </object>
         </div>` : `
         <div class="page-preview-visual" style="--page-bg:${page.background};--page-fit:${page.fit};--page-position:${page.position}">
           <img src="${page.src}" alt="Sayfa ${index + 1}"><span class="page-preview-number">${index + 1}</span>
