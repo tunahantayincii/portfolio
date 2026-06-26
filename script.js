@@ -70,6 +70,7 @@ async function initializeSite() {
   const zoomOverlay = $("#page-zoom");
   const zoomViewport = $("#zoom-viewport");
   const zoomImage = $("#zoom-image");
+  const zoomPdf = $("#zoom-pdf");
   const zoomLevel = $("#zoom-level");
   let activeProject;
   let spreadIndex = 0;
@@ -124,7 +125,7 @@ async function initializeSite() {
     if (!page) return `<div class="blank-page"></div>`;
     if (page.type === "image") return `<button class="reader-image-frame zoomable-page" type="button" data-zoom-src="${page.page.src}" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"><span class="zoom-hint">Yakınlaştır</span></button><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "text") return `<div class="reader-text-page" style="background:${page.page.background || "#e8e4da"}"><span>${page.page.kicker || "Not"}</span><h3>${page.page.title || "Metin sayfası"}</h3><p>${page.page.body || ""}</p></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
-    if (page.type === "pdf") return `<div class="reader-pdf-page" style="background:${page.page.background || "#e8e4da"}"><object data="${page.page.src}#toolbar=0&navpanes=0&view=FitH" type="application/pdf"><div class="pdf-fallback"><strong>PDF</strong><span>${page.page.title || "Proje PDF sayfası"}</span><a href="${page.page.src}" target="_blank" rel="noopener noreferrer">PDF'yi aç ↗</a></div></object><a href="${page.page.src}" target="_blank" rel="noopener noreferrer">PDF'yi yeni sekmede aç ↗</a></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "pdf") return `<div class="reader-pdf-page" style="background:${page.page.background || "#e8e4da"}"><button class="pdf-inspect-trigger" type="button" data-pdf-src="${page.page.src}"><object data="${page.page.src}#toolbar=0&navpanes=0&view=FitH" type="application/pdf"><div class="pdf-fallback"><strong>PDF</strong><span>${page.page.title || "Proje PDF sayfası"}</span></div></object><span>PDF'yi sayfa içinde incele</span></button></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "end") return `<div class="end-page"><span>${settings.studioName}</span><strong>${page.project.title}</strong><small>${page.project.year}</small></div>`;
     return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
   }
@@ -147,6 +148,9 @@ async function initializeSite() {
     }
     document.querySelectorAll(".zoomable-page").forEach((button) => {
       button.addEventListener("click", () => openZoom(button.dataset.zoomSrc));
+    });
+    document.querySelectorAll(".pdf-inspect-trigger").forEach((button) => {
+      button.addEventListener("click", () => openPdfZoom(button.dataset.pdfSrc));
     });
     $("#page-count").textContent = `${Math.min(spreadIndex + pageStep, pages.length)} / ${pages.length}`;
     $("#page-progress").style.width = `${Math.min(100, ((spreadIndex + pageStep) / pages.length) * 100)}%`;
@@ -183,7 +187,19 @@ async function initializeSite() {
 
   function openZoom(src) {
     if (!src) return;
+    zoomOverlay.classList.remove("pdf-mode");
+    zoomPdf.removeAttribute("data");
     zoomImage.src = src;
+    resetImageZoom();
+    zoomOverlay.classList.add("open");
+    zoomOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function openPdfZoom(src) {
+    if (!src) return;
+    zoomOverlay.classList.add("pdf-mode");
+    zoomImage.removeAttribute("src");
+    zoomPdf.data = `${src}#toolbar=1&navpanes=0&view=FitH`;
     resetImageZoom();
     zoomOverlay.classList.add("open");
     zoomOverlay.setAttribute("aria-hidden", "false");
@@ -191,8 +207,10 @@ async function initializeSite() {
 
   function closeZoom() {
     zoomOverlay.classList.remove("open");
+    zoomOverlay.classList.remove("pdf-mode");
     zoomOverlay.setAttribute("aria-hidden", "true");
     zoomImage.removeAttribute("src");
+    zoomPdf.removeAttribute("data");
     resetImageZoom();
   }
 
@@ -228,11 +246,16 @@ async function initializeSite() {
   $("#zoom-reset").addEventListener("click", resetImageZoom);
   zoomOverlay.addEventListener("click", (event) => { if (event.target === zoomOverlay) closeZoom(); });
   zoomViewport.addEventListener("wheel", (event) => {
+    if (zoomOverlay.classList.contains("pdf-mode")) return;
     event.preventDefault();
     setImageZoom(imageZoom + (event.deltaY < 0 ? .25 : -.25));
   }, { passive: false });
-  zoomViewport.addEventListener("dblclick", () => setImageZoom(imageZoom > 1 ? 1 : 2));
+  zoomViewport.addEventListener("dblclick", () => {
+    if (zoomOverlay.classList.contains("pdf-mode")) return;
+    setImageZoom(imageZoom > 1 ? 1 : 2);
+  });
   zoomViewport.addEventListener("pointerdown", (event) => {
+    if (zoomOverlay.classList.contains("pdf-mode")) return;
     if (imageZoom <= 1) return;
     zoomPointerId = event.pointerId;
     dragStartX = event.clientX;
