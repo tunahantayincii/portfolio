@@ -571,7 +571,7 @@ $("#pages-upload").addEventListener("change", async (event) => {
     for (const file of [...event.target.files]) {
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
         if (file.size > 3 * 1024 * 1024) throw new Error(`${file.name} 3 MB'dan büyük. PDF'yi sıkıştırıp tekrar yükleyin.`);
-        const src = await uploadPdf(file, "pages");
+        const src = await fileToDataUrl(file);
         newPages.push(normalizePage({ type: "pdf", src, title: file.name.replace(/\.pdf$/i, "") }));
       } else {
         const dataUrl = await imageFileToDataUrl(file, 1800);
