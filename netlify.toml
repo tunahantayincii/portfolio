@@ -28,6 +28,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/pdf-media"
+  to = "/.netlify/functions/pdf-media"
+  status = 200
+
+[[redirects]]
   from = "/api/setup-check"
   to = "/.netlify/functions/setup-check"
   status = 200

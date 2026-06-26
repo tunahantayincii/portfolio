@@ -159,15 +159,13 @@ function fileToDataUrl(file) {
 
 async function uploadFile(file, prefix = "project") {
   const isPdf = file.type === "application/pdf" || (file.name || "").toLowerCase().endsWith(".pdf");
-  const response = await fetch(`/api/media?prefix=${encodeURIComponent(prefix)}&name=${encodeURIComponent(file.name || "file")}`, {
+  const endpoint = isPdf ? "/api/pdf-media" : "/api/media";
+  const response = await fetch(`${endpoint}?prefix=${encodeURIComponent(prefix)}&name=${encodeURIComponent(file.name || "file")}`, {
     method: "POST",
     headers: { "Content-Type": isPdf ? "application/pdf" : (file.type || "application/octet-stream") },
     body: file
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok && isPdf && file.size <= 5 * 1024 * 1024) {
-    return uploadImage(await fileToDataUrl(file), prefix);
-  }
   if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
   return result.url;
 }
