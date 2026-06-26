@@ -159,10 +159,10 @@ function fileToDataUrl(file) {
 
 async function uploadFile(file, prefix = "project") {
   const isPdf = file.type === "application/pdf" || (file.name || "").toLowerCase().endsWith(".pdf");
-  const endpoint = isPdf ? "/api/pdf-media" : "/api/media";
+  const endpoint = "/api/media";
   const response = await fetch(`${endpoint}?prefix=${encodeURIComponent(prefix)}&name=${encodeURIComponent(file.name || "file")}`, {
     method: "POST",
-    headers: { "Content-Type": isPdf ? "application/pdf" : (file.type || "application/octet-stream") },
+    headers: { "Content-Type": isPdf ? "application/pdf" : (file.type || "application/octet-stream"), "X-File-Name": file.name || "file" },
     body: file
   });
   const result = await response.json().catch(() => ({}));
