@@ -76,6 +76,21 @@
       <button class="reader-nav next" type="button" aria-label="Sonraki sayfa">→</button>
     </div>
     <div class="reader-progress"><span id="page-count"></span><i><b id="page-progress"></b></i></div>
+    <aside class="feedback-dock" id="feedback-dock">
+      <button class="feedback-toggle" id="feedback-toggle" type="button" aria-expanded="false">Geri Bildirimler</button>
+      <div class="feedback-drawer" id="feedback-drawer" hidden>
+        <div class="feedback-drawer-head"><strong>Geri Bildirimler</strong><span id="feedback-count"></span></div>
+        <div class="feedback-list" id="feedback-list"></div>
+        <form class="feedback-form" id="feedback-form">
+          <input class="feedback-honey" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <label>Adınız<input name="name" maxlength="80" required></label>
+          <label>E-posta <small>Yayında görünmez</small><input name="email" type="email" maxlength="120"></label>
+          <label>Geri bildirim<textarea name="message" maxlength="600" required></textarea></label>
+          <button type="submit">Gönder</button>
+          <p id="feedback-status"></p>
+        </form>
+      </div>
+    </aside>
     <div class="page-zoom" id="page-zoom" aria-hidden="true">
       <button class="zoom-close" type="button" aria-label="Yakınlaştırmayı kapat">×</button>
       <div class="zoom-viewport" id="zoom-viewport">
@@ -92,7 +107,7 @@
     </div>
   </dialog>
 
-  <script src="content.js?v=pdf-inspect-1"></script>
-  <script src="script.js?v=pdf-inspect-1"></script>
+  <script src="content.js?v=feedback-1"></script>
+  <script src="script.js?v=feedback-1"></script>
 </body>
 </html>

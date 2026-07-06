@@ -34,6 +34,7 @@ const DEFAULT_CONTENT = {
       { label: "Instagram", url: "https://www.instagram.com/" }
     ]
   },
+  feedback: [],
   projects: [
     {
       id: "avlu-sanat-merkezi", title: "Avlu Sanat Merkezi", location: "Tasarım Stüdyosu IV", category: "Akademik Proje", year: "2024",
@@ -93,6 +94,18 @@ function normalizeContent(content) {
   normalized.settings.heroImage = normalized.settings.heroSlides[0]?.image || normalized.settings.heroImage || DEFAULT_CONTENT.settings.heroImage;
   normalized.settings.heroFeaturedProjects = normalized.settings.heroSlides.map(({ label, title }) => ({ label, title }));
   normalized.projects = Array.isArray(normalized.projects) ? normalized.projects : [];
+  normalized.feedback = Array.isArray(normalized.feedback)
+    ? normalized.feedback.map((item) => ({
+      id: item.id || `feedback-${Date.now()}`,
+      projectId: item.projectId || "",
+      projectTitle: item.projectTitle || "",
+      name: item.name || "",
+      email: item.email || "",
+      message: item.message || "",
+      approved: Boolean(item.approved),
+      createdAt: item.createdAt || new Date().toISOString()
+    })).filter((item) => item.projectId && item.name && item.message)
+    : [];
   return normalized;
 }
 

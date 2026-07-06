@@ -1,4 +1,11 @@
 const $ = (selector) => document.querySelector(selector);
+const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+}[char]));
 
 async function initializeSite() {
   const content = await getContent();
@@ -72,6 +79,12 @@ async function initializeSite() {
   const zoomImage = $("#zoom-image");
   const zoomPdf = $("#zoom-pdf");
   const zoomLevel = $("#zoom-level");
+  const feedbackToggle = $("#feedback-toggle");
+  const feedbackDrawer = $("#feedback-drawer");
+  const feedbackList = $("#feedback-list");
+  const feedbackForm = $("#feedback-form");
+  const feedbackStatus = $("#feedback-status");
+  const feedbackCount = $("#feedback-count");
   let activeProject;
   let spreadIndex = 0;
   let pageTurnInProgress = false;
@@ -180,10 +193,64 @@ async function initializeSite() {
     spreadIndex = 0;
     $("#reader-kicker").textContent = `${project.location} · ${project.category} · ${project.year}`;
     $("#reader-title").textContent = project.title;
+    renderFeedback();
+    closeFeedbackDrawer();
     renderSpread();
     modal.showModal();
     document.body.style.overflow = "hidden";
   }
+
+  function currentFeedback() {
+    return (content.feedback || []).filter((item) => item.approved && item.projectId === activeProject?.id);
+  }
+
+  function renderFeedback() {
+    const items = currentFeedback();
+    feedbackCount.textContent = items.length ? `${items.length} yorum` : "Henüz yok";
+    feedbackList.innerHTML = items.length
+      ? items.map((item) => `<article class="feedback-item"><p>${escapeHtml(item.message)}</p><span>${escapeHtml(item.name)}</span></article>`).join("")
+      : `<p class="feedback-empty">Bu proje için henüz yayında geri bildirim yok. İlk notu sen bırakabilirsin.</p>`;
+    feedbackStatus.textContent = "";
+    feedbackForm.reset();
+  }
+
+  function closeFeedbackDrawer() {
+    feedbackDrawer.hidden = true;
+    feedbackToggle.setAttribute("aria-expanded", "false");
+  }
+
+  feedbackToggle.addEventListener("click", () => {
+    const nextOpen = feedbackDrawer.hidden;
+    feedbackDrawer.hidden = !nextOpen;
+    feedbackToggle.setAttribute("aria-expanded", String(nextOpen));
+  });
+
+  feedbackForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!activeProject) return;
+    const data = new FormData(feedbackForm);
+    feedbackStatus.textContent = "Gönderiliyor...";
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({
+          projectId: activeProject.id,
+          projectTitle: activeProject.title,
+          name: data.get("name"),
+          email: data.get("email"),
+          message: data.get("message"),
+          website: data.get("website")
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Geri bildirim gönderilemedi.");
+      feedbackForm.reset();
+      feedbackStatus.textContent = "Geri bildirimin geldi. Yönetim panelinden onaylanınca burada görünecek.";
+    } catch (error) {
+      feedbackStatus.textContent = error.message || "Geri bildirim gönderilemedi.";
+    }
+  });
 
   function openZoom(src) {
     if (!src) return;

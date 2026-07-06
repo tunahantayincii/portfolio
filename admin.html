@@ -22,7 +22,7 @@
   <div class="admin-shell" id="admin-shell">
   <aside>
     <a class="admin-logo" href="index.html"><span>TUNAHAN TAYINCI</span><span>PORTFOLIO</span><small>YÖNETİM</small></a>
-    <nav><button data-tab="general" class="active">Genel İçerik</button><button data-tab="projects">Projeler</button><button data-tab="backup">Yedekleme</button></nav>
+    <nav><button data-tab="general" class="active">Genel İçerik</button><button data-tab="projects">Projeler</button><button data-tab="feedback">Geri Bildirimler</button><button data-tab="backup">Yedekleme</button></nav>
     <div class="aside-bottom"><a class="view-site" href="index.html">Siteyi görüntüle ↗</a><button id="logout-button" type="button">Çıkış yap</button></div>
   </aside>
   <main>
@@ -63,6 +63,11 @@
     <section class="panel" id="projects">
       <div class="project-toolbar"><p>Projeler kitap olarak gösterilir. Kapak, iç sayfalar ve sıralamayı buradan yönetin. Kartları sürükleyebilir veya oklarla sıralayabilirsiniz.</p><button class="primary" id="add-project" type="button">+ Yeni proje</button></div>
       <div class="admin-projects" id="admin-projects"></div>
+    </section>
+
+    <section class="panel" id="feedback">
+      <div class="feedback-admin-toolbar"><p>Ziyaretçilerden gelen geri bildirimler önce burada bekler. Onayladığınız mesajlar ilgili proje kitabında görünür.</p></div>
+      <div class="feedback-admin-list" id="feedback-admin-list"></div>
     </section>
 
     <section class="panel" id="backup">
@@ -129,6 +134,6 @@
     </div>
   </dialog>
   </div>
-  <script src="content.js?v=pdf-inspect-1"></script><script src="admin.js?v=pdf-inspect-1"></script>
+  <script src="content.js?v=feedback-1"></script><script src="admin.js?v=feedback-1"></script>
 </body>
 </html>

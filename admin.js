@@ -7,6 +7,13 @@ let draggedPageIndex = -1;
 let draggedProjectIndex = -1;
 const PROJECT_DESCRIPTION_LIMIT = 500;
 const $ = (selector) => document.querySelector(selector);
+const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+}[char]));
 
 function normalizePage(page) {
   if (typeof page === "string") return { type: "image", src: page, fit: "cover", position: "center", background: "#e8e4da" };
@@ -64,6 +71,7 @@ async function initializePanel() {
   content = await getContent();
   fillSettings();
   renderProjects();
+  renderFeedbackAdmin();
 }
 
 async function hasActiveSession() {
@@ -412,6 +420,46 @@ function renderProjects() {
   });
 }
 
+function renderFeedbackAdmin() {
+  const container = $("#feedback-admin-list");
+  if (!container) return;
+  const feedback = Array.isArray(content.feedback) ? content.feedback : [];
+  if (!feedback.length) {
+    container.innerHTML = `<div class="feedback-admin-empty">Henüz geri bildirim yok.</div>`;
+    return;
+  }
+  container.innerHTML = feedback.map((item, index) => {
+    const date = item.createdAt ? new Date(item.createdAt).toLocaleDateString("tr-TR") : "";
+    const project = content.projects.find((projectItem) => projectItem.id === item.projectId);
+    return `
+      <article class="feedback-admin-card ${item.approved ? "approved" : "pending"}">
+        <div>
+          <span>${item.approved ? "Yayında" : "Onay bekliyor"}</span>
+          <h2>${escapeHtml(item.projectTitle || project?.title || "Proje")}</h2>
+          <p>${escapeHtml(item.message)}</p>
+          <small>${escapeHtml(item.name)}${item.email ? ` · ${escapeHtml(item.email)}` : ""}${date ? ` · ${date}` : ""}</small>
+        </div>
+        <div class="feedback-admin-actions">
+          <button type="button" data-toggle-feedback="${index}">${item.approved ? "Yayından kaldır" : "Onayla"}</button>
+          <button class="danger-action" type="button" data-delete-feedback="${index}">Sil</button>
+        </div>
+      </article>`;
+  }).join("");
+  document.querySelectorAll("[data-toggle-feedback]").forEach((button) => button.addEventListener("click", async () => {
+    const index = Number(button.dataset.toggleFeedback);
+    content.feedback[index].approved = !content.feedback[index].approved;
+    renderFeedbackAdmin();
+    await persist(content.feedback[index].approved ? "Geri bildirim yayına alındı" : "Geri bildirim yayından kaldırıldı");
+  }));
+  document.querySelectorAll("[data-delete-feedback]").forEach((button) => button.addEventListener("click", async () => {
+    const index = Number(button.dataset.deleteFeedback);
+    if (!confirm("Bu geri bildirim silinsin mi?")) return;
+    content.feedback.splice(index, 1);
+    renderFeedbackAdmin();
+    await persist("Geri bildirim silindi");
+  }));
+}
+
 function renderPagePreviews() {
   $("#page-previews").innerHTML = editingPages.map((page, index) => `
     <div class="page-preview" draggable="true" data-page-index="${index}">
@@ -604,6 +652,7 @@ $("#project-form").addEventListener("submit", async (event) => {
   else content.projects.push(project);
   if (await persist("Proje kaydedildi")) {
     renderProjects();
+    renderFeedbackAdmin();
     $("#project-editor").close();
   }
 });
@@ -643,6 +692,7 @@ $("#delete-project").addEventListener("click", async () => {
   content.projects = content.projects.filter((project) => project.id !== id);
   await persist("Proje silindi");
   renderProjects();
+  renderFeedbackAdmin();
   $("#project-editor").close();
 });
 
@@ -659,8 +709,8 @@ $("#import-data").addEventListener("change", async (event) => {
   try {
     const imported = JSON.parse(await event.target.files[0].text());
     if (!imported.settings || !Array.isArray(imported.projects)) throw new Error();
-    content = imported;
-    if (await persist("Yedek geri yüklendi")) { fillSettings(); renderProjects(); }
+    content = normalizeContent(imported);
+    if (await persist("Yedek geri yüklendi")) { fillSettings(); renderProjects(); renderFeedbackAdmin(); }
   } catch { status("Geçersiz yedek dosyası", true); }
 });
 
