@@ -231,7 +231,7 @@ async function initializeSite() {
     const data = new FormData(feedbackForm);
     feedbackStatus.textContent = "Gönderiliyor...";
     try {
-      const response = await fetch("/api/feedback", {
+      const response = await fetch("/.netlify/functions/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
@@ -244,7 +244,7 @@ async function initializeSite() {
         })
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || "Geri bildirim gönderilemedi.");
+      if (!response.ok) throw new Error(result.error || `Geri bildirim gönderilemedi (${response.status}).`);
       feedbackForm.reset();
       feedbackStatus.textContent = "Geri bildirimin geldi. Yönetim panelinden onaylanınca burada görünecek.";
     } catch (error) {
