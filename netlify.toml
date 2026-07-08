@@ -29,7 +29,7 @@
 
 [[redirects]]
   from = "/api/feedback"
-  to = "/.netlify/functions/content"
+  to = "/.netlify/functions/feedback"
   status = 200
 
 [[redirects]]

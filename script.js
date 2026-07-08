@@ -244,7 +244,10 @@ async function initializeSite() {
         })
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok && (response.status === 405 || result.error === "Method not allowed")) {
+      if (!response.ok && response.status === 404) throw new Error("Geri bildirim servisi canlıda bulunamadı. Netlify yeniden deploy edilmeli.");
+      if (!response.ok && response.status === 405) throw new Error("Geri bildirim servisi eski sürümde çalışıyor. Netlify yeniden deploy edilmeli.");
+      if (!response.ok) throw new Error(result.error || `Geri bildirim gönderilemedi (${response.status}).`);
+      if (false) {
         await submitFeedbackFormFallback({
           projectId: activeProject.id,
           projectTitle: activeProject.title,
