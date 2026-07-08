@@ -29,10 +29,10 @@ async function initializeSite() {
   $("#footer-phone").textContent = settings.phone;
   $("#footer-phone").href = `tel:${settings.phone.replace(/\s/g, "")}`;
   $("#contact-email").href = settings.contactUrl || `mailto:${settings.email}`;
-  $("#contact-link-text").textContent = settings.contactText || "TanÄ±ÅŸalÄ±m.";
+  $("#contact-link-text").textContent = settings.contactText || "Tanışalım.";
   const socialLinks = Array.isArray(settings.socials) ? settings.socials.filter((item) => item.label && item.url) : [];
-  $("#footer-socials").innerHTML = socialLinks.map((item) => `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.label} â†—</a>`).join("") + `<a href="admin.html">YÃ¶netim Paneli â†—</a>`;
-  const heroSlides = Array.isArray(settings.heroSlides) ? settings.heroSlides.slice(0, 3) : [{ image: settings.heroImage, label: "SeÃ§ili Proje 01", title: "" }];
+  $("#footer-socials").innerHTML = socialLinks.map((item) => `<a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.label} ↗</a>`).join("") + `<a href="admin.html">Yönetim Paneli ↗</a>`;
+  const heroSlides = Array.isArray(settings.heroSlides) ? settings.heroSlides.slice(0, 3) : [{ image: settings.heroImage, label: "Seçili Proje 01", title: "" }];
   const heroProjects = $("#hero-featured-projects");
   let activeHeroSlide = 0;
   let heroSlideTimer;
@@ -104,8 +104,8 @@ async function initializeSite() {
     book.style.setProperty("--book-color", project.color || "#555");
     book.innerHTML = `
       <span class="book-number">${String(index + 1).padStart(2, "0")}</span>
-      <span class="book-cover"><img src="${project.cover}" alt="${project.title} kapak gÃ¶rseli"><i></i></span>
-      <span class="book-caption"><strong>${project.title}</strong><small>${project.location} Â· ${project.category} Â· ${project.year}</small></span>`;
+      <span class="book-cover"><img src="${project.cover}" alt="${project.title} kapak görseli"><i></i></span>
+      <span class="book-caption"><strong>${project.title}</strong><small>${project.location} · ${project.category} · ${project.year}</small></span>`;
     book.addEventListener("click", () => openProject(project));
     library.appendChild(book);
   });
@@ -136,11 +136,11 @@ async function initializeSite() {
 
   function pageMarkup(page) {
     if (!page) return `<div class="blank-page"></div>`;
-    if (page.type === "image") return `<button class="reader-image-frame zoomable-page" type="button" data-zoom-src="${page.page.src}" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfasÄ± ${page.number}"><span class="zoom-hint">YakÄ±nlaÅŸtÄ±r</span></button><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
-    if (page.type === "text") return `<div class="reader-text-page" style="background:${page.page.background || "#e8e4da"}"><span>${page.page.kicker || "Not"}</span><h3>${page.page.title || "Metin sayfasÄ±"}</h3><p>${page.page.body || ""}</p></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
-    if (page.type === "pdf") return `<div class="reader-pdf-page" style="background:${page.page.background || "#e8e4da"}"><button class="pdf-inspect-trigger" type="button" data-pdf-src="${page.page.src}"><object data="${page.page.src}#toolbar=0&navpanes=0&view=FitH" type="application/pdf"><div class="pdf-fallback"><strong>PDF</strong><span>${page.page.title || "Proje PDF sayfasÄ±"}</span></div></object><span>PDF'yi sayfa iÃ§inde incele</span></button></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "image") return `<button class="reader-image-frame zoomable-page" type="button" data-zoom-src="${page.page.src}" style="background:${page.page.background || "#e8e4da"}"><img class="reader-image" style="object-fit:${page.page.fit || "cover"};object-position:${page.page.position || "center"}" src="${page.page.src}" alt="Proje sayfası ${page.number}"><span class="zoom-hint">Yakınlaştır</span></button><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "text") return `<div class="reader-text-page" style="background:${page.page.background || "#e8e4da"}"><span>${page.page.kicker || "Not"}</span><h3>${page.page.title || "Metin sayfası"}</h3><p>${page.page.body || ""}</p></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
+    if (page.type === "pdf") return `<div class="reader-pdf-page" style="background:${page.page.background || "#e8e4da"}"><button class="pdf-inspect-trigger" type="button" data-pdf-src="${page.page.src}"><object data="${page.page.src}#toolbar=0&navpanes=0&view=FitH" type="application/pdf"><div class="pdf-fallback"><strong>PDF</strong><span>${page.page.title || "Proje PDF sayfası"}</span></div></object><span>PDF'yi sayfa içinde incele</span></button></div><span class="folio">${String(page.number).padStart(2, "0")}</span>`;
     if (page.type === "end") return `<div class="end-page"><span>${settings.studioName}</span><strong>${page.project.title}</strong><small>${page.project.year}</small></div>`;
-    return `<div class="intro-page"><span>${page.project.location} Â· ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
+    return `<div class="intro-page"><span>${page.project.location} · ${page.project.year}</span><h3>${page.project.title}</h3><p>${page.project.description}</p><small>${page.project.category}</small></div>`;
   }
 
   function renderSpread(direction = 1, animate = false) {
@@ -191,7 +191,7 @@ async function initializeSite() {
   function openProject(project) {
     activeProject = project;
     spreadIndex = 0;
-    $("#reader-kicker").textContent = `${project.location} Â· ${project.category} Â· ${project.year}`;
+    $("#reader-kicker").textContent = `${project.location} · ${project.category} · ${project.year}`;
     $("#reader-title").textContent = project.title;
     renderFeedback();
     closeFeedbackDrawer();
@@ -206,10 +206,10 @@ async function initializeSite() {
 
   function renderFeedback() {
     const items = currentFeedback();
-    feedbackCount.textContent = items.length ? `${items.length} yorum` : "HenÃ¼z yok";
+    feedbackCount.textContent = items.length ? `${items.length} yorum` : "Henüz yok";
     feedbackList.innerHTML = items.length
       ? items.map((item) => `<article class="feedback-item"><p>${escapeHtml(item.message)}</p><span>${escapeHtml(item.name)}</span></article>`).join("")
-      : `<p class="feedback-empty">Bu proje iÃ§in henÃ¼z yayÄ±nda geri bildirim yok. Ä°lk notu sen bÄ±rakabilirsin.</p>`;
+      : `<p class="feedback-empty">Bu proje için henüz yayında geri bildirim yok. İlk notu sen bırakabilirsin.</p>`;
     feedbackStatus.textContent = "";
     feedbackForm.reset();
   }
@@ -248,7 +248,7 @@ async function initializeSite() {
   });
 
   async function sendFeedback(payload) {
-    const endpoints = ["/api/feedback", "/api/content"];
+    const endpoints = ["/api/feedback"];
     let lastError = "Geri bildirim gönderilemedi.";
     for (const endpoint of endpoints) {
       const response = await fetch(endpoint, {
@@ -261,7 +261,11 @@ async function initializeSite() {
       lastError = result.error || `Geri bildirim gönderilemedi (${response.status}).`;
       if (response.status !== 404 && response.status !== 405) break;
     }
-    throw new Error(lastError.includes("Method not allowed") ? "Geri bildirim servisi eski sürümde çalışıyor. Netlify yeniden deploy edilmeli." : lastError);
+    throw new Error(lastError.includes("404")
+      ? "Geri bildirim servisi Netlify'a yüklenmemiş. Deploy'u GitHub üzerinden yeniden alman gerekiyor."
+      : lastError.includes("Method not allowed")
+        ? "Geri bildirim servisi eski sürümde çalışıyor. Netlify Functions yeniden deploy edilmeli."
+        : lastError);
   }
 
   function openZoom(src) {
@@ -385,3 +389,5 @@ menuButton.addEventListener("click", () => {
 });
 
 initializeSite();
+
+

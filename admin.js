@@ -1,4 +1,4 @@
-let content;
+﻿let content;
 let editingPages = [];
 let editingCover = "";
 let pendingHero = "";
@@ -782,3 +782,5 @@ $("#open-media-library").addEventListener("click", async () => {
     grid.innerHTML = `<p>${error.message}</p>`;
   }
 });
+
+

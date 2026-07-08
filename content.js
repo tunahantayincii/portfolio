@@ -1,4 +1,4 @@
-const STORAGE_KEY = "tunahan-tayinci-portfolio-v1";
+﻿const STORAGE_KEY = "tunahan-tayinci-portfolio-v1";
 
 const DEFAULT_CONTENT = {
   settings: {
@@ -212,3 +212,4 @@ async function uploadImage(dataUrl, prefix = "project") {
   if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
   return result.url;
 }
+
