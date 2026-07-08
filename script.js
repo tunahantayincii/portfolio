@@ -244,6 +244,18 @@ async function initializeSite() {
         })
       });
       const result = await response.json().catch(() => ({}));
+      if (!response.ok && (response.status === 405 || result.error === "Method not allowed")) {
+        await submitFeedbackFormFallback({
+          projectId: activeProject.id,
+          projectTitle: activeProject.title,
+          name: data.get("name"),
+          email: data.get("email"),
+          message: data.get("message")
+        });
+        feedbackForm.reset();
+        feedbackStatus.textContent = "Geri bildirimin geldi. Netlify form kayıtlarına düştü.";
+        return;
+      }
       if (!response.ok) throw new Error(result.error || `Geri bildirim gönderilemedi (${response.status}).`);
       feedbackForm.reset();
       feedbackStatus.textContent = "Geri bildirimin geldi. Yönetim panelinden onaylanınca burada görünecek.";
@@ -251,6 +263,23 @@ async function initializeSite() {
       feedbackStatus.textContent = error.message || "Geri bildirim gönderilemedi.";
     }
   });
+
+  async function submitFeedbackFormFallback(payload) {
+    const body = new URLSearchParams({
+      "form-name": "geri-bildirimler",
+      projectId: payload.projectId || "",
+      projectTitle: payload.projectTitle || "",
+      name: payload.name || "",
+      email: payload.email || "",
+      message: payload.message || ""
+    });
+    const response = await fetch("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
+    });
+    if (!response.ok) throw new Error(`Geri bildirim formu kaydedilemedi (${response.status}).`);
+  }
 
   function openZoom(src) {
     if (!src) return;
