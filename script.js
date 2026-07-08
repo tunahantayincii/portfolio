@@ -231,7 +231,7 @@ async function initializeSite() {
     const data = new FormData(feedbackForm);
     feedbackStatus.textContent = "Gönderiliyor...";
     try {
-      const response = await fetch("/api/content", {
+      const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
