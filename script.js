@@ -231,7 +231,7 @@ async function initializeSite() {
     const data = new FormData(feedbackForm);
     feedbackStatus.textContent = "Gönderiliyor...";
     try {
-      const response = await fetch("/.netlify/functions/feedback", {
+      const response = await fetch("/api/content", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify({
