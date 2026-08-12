@@ -1,4 +1,5 @@
 ﻿const STORAGE_KEY = "tunahan-tayinci-portfolio-v1";
+const REMOTE_CACHE_KEY = "tunahan-tayinci-portfolio-remote-ok";
 
 const DEFAULT_CONTENT = {
   settings: {
@@ -115,15 +116,23 @@ function getLocalContent() {
 }
 
 async function getContent() {
-  try {
-    const response = await fetch("/api/content", { headers: { "Accept": "application/json" } });
-    if (response.ok) {
-      const content = normalizeContent(await response.json());
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
-      return content;
-    }
-  } catch {}
-  return getLocalContent();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch(`/api/content?ts=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Accept": "application/json", "Cache-Control": "no-cache" }
+      });
+      if (response.ok) {
+        const content = normalizeContent(await response.json());
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+        localStorage.setItem(REMOTE_CACHE_KEY, "1");
+        return content;
+      }
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 350 + attempt * 450));
+  }
+  if (localStorage.getItem(REMOTE_CACHE_KEY) === "1") return getLocalContent();
+  return normalizeContent(DEFAULT_CONTENT);
 }
 
 async function saveContent(content) {
@@ -138,6 +147,7 @@ async function saveContent(content) {
 
 function resetContent() {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(REMOTE_CACHE_KEY);
 }
 
 function imageFileToDataUrl(file, maxSize = 1800, quality = .82) {
@@ -212,4 +222,5 @@ async function uploadImage(dataUrl, prefix = "project") {
   if (!response.ok) throw new Error(result.error || `Yükleme başarısız (${response.status})`);
   return result.url;
 }
+
 

@@ -105,6 +105,11 @@ $("#login-form").addEventListener("submit", async (event) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username: data.get("username").trim(), password: data.get("password") })
     });
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 429) {
+      const minutes = Math.max(1, Math.ceil((result.retryAfterSeconds || 900) / 60));
+      throw new Error(`lock:${minutes}`);
+    }
     const sessionActive = await hasActiveSession();
     if (!response.ok && !sessionActive) throw new Error("invalid");
     if (response.ok && !sessionActive) throw new Error("session");
@@ -117,9 +122,14 @@ $("#login-form").addEventListener("submit", async (event) => {
     }
     return;
   } catch (error) {
-    $("#login-error").textContent = error.message === "session"
-      ? "Giriş yapıldı ama oturum doğrulanamadı. Sayfayı yenileyip tekrar deneyin."
-      : "Kullanıcı adı veya şifre yanlış.";
+    if (error.message?.startsWith("lock:")) {
+      const minutes = error.message.split(":")[1] || "15";
+      $("#login-error").textContent = `7 yanlış deneme yapıldı. Lütfen yaklaşık ${minutes} dakika sonra tekrar deneyin.`;
+    } else {
+      $("#login-error").textContent = error.message === "session"
+        ? "Giriş yapıldı ama oturum doğrulanamadı. Sayfayı yenileyip tekrar deneyin."
+        : "Kullanıcı adı veya şifre yanlış. 7 yanlış denemeden sonra 15 dakika bekleme uygulanır.";
+    }
   } finally {
     if (submitButton) submitButton.disabled = false;
   }
