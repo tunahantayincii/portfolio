@@ -59,7 +59,7 @@ const DEFAULT_CONTENT = {
 };
 
 function normalizeContent(content) {
-  const normalized = structuredClone(content || DEFAULT_CONTENT);
+  const normalized = JSON.parse(JSON.stringify(content || DEFAULT_CONTENT));
   normalized.settings = { ...DEFAULT_CONTENT.settings, ...(normalized.settings || {}) };
   normalized.settings.contactText = normalized.settings.contactText || "Tanışalım.";
   normalized.settings.contactUrl = normalized.settings.contactUrl || `mailto:${normalized.settings.email}`;
@@ -110,8 +110,23 @@ function normalizeContent(content) {
   return normalized;
 }
 
+function readLocalValue(key) {
+  try { return localStorage.getItem(key); }
+  catch { return null; }
+}
+
+function writeLocalValue(key, value) {
+  try { localStorage.setItem(key, value); }
+  catch {}
+}
+
+function removeLocalValue(key) {
+  try { localStorage.removeItem(key); }
+  catch {}
+}
+
 function getLocalContent() {
-  try { return normalizeContent(JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_CONTENT); }
+  try { return normalizeContent(JSON.parse(readLocalValue(STORAGE_KEY)) || DEFAULT_CONTENT); }
   catch { return normalizeContent(DEFAULT_CONTENT); }
 }
 
@@ -124,19 +139,19 @@ async function getContent() {
       });
       if (response.ok) {
         const content = normalizeContent(await response.json());
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
-        localStorage.setItem(REMOTE_CACHE_KEY, "1");
+        writeLocalValue(STORAGE_KEY, JSON.stringify(content));
+        writeLocalValue(REMOTE_CACHE_KEY, "1");
         return content;
       }
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 350 + attempt * 450));
   }
-  if (localStorage.getItem(REMOTE_CACHE_KEY) === "1") return getLocalContent();
+  if (readLocalValue(REMOTE_CACHE_KEY) === "1" || readLocalValue(STORAGE_KEY)) return getLocalContent();
   return normalizeContent(DEFAULT_CONTENT);
 }
 
 async function saveContent(content) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
+  writeLocalValue(STORAGE_KEY, JSON.stringify(content));
   const response = await fetch("/api/content", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -146,8 +161,8 @@ async function saveContent(content) {
 }
 
 function resetContent() {
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(REMOTE_CACHE_KEY);
+  removeLocalValue(STORAGE_KEY);
+  removeLocalValue(REMOTE_CACHE_KEY);
 }
 
 function imageFileToDataUrl(file, maxSize = 1800, quality = .82) {

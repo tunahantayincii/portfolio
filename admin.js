@@ -727,7 +727,7 @@ $("#import-data").addEventListener("change", async (event) => {
 $("#reset-data").addEventListener("click", async () => {
   if (!confirm("Tüm düzenlemeler silinip ilk içeriğe dönülsün mü?")) return;
   resetContent();
-  content = structuredClone(DEFAULT_CONTENT);
+  content = JSON.parse(JSON.stringify(DEFAULT_CONTENT));
   await persist("İçerik sıfırlandı");
   fillSettings();
   renderProjects();
