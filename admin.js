@@ -5,6 +5,9 @@ let pendingHero = "";
 let editingPageIndex = -1;
 let draggedPageIndex = -1;
 let draggedProjectIndex = -1;
+let saveQueue = Promise.resolve();
+let contentRevision = 0;
+let hasUnsavedChanges = false;
 const PROJECT_DESCRIPTION_LIMIT = 500;
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({
@@ -67,11 +70,14 @@ function showPanel() {
 }
 
 async function initializePanel() {
-  showPanel();
   content = await getContent();
   fillSettings();
   renderProjects();
   renderFeedbackAdmin();
+  updateAdminCounts();
+  hasUnsavedChanges = false;
+  showPanel();
+  status("Hazır", "neutral");
 }
 
 async function hasActiveSession() {
@@ -135,29 +141,30 @@ $("#login-form").addEventListener("submit", async (event) => {
   }
 });
 
-$("#open-media-library").addEventListener("click", async (event) => {
-  event.stopImmediatePropagation();
+async function openMediaLibrary() {
   const grid = $("#media-grid");
-  grid.innerHTML = "<p>Medya havuzu yükleniyor...</p>";
+  grid.innerHTML = '<p class="media-state">Medya havuzu yükleniyor...</p>';
   $("#media-library").showModal();
   try {
-    const response = await fetch("/api/media");
-    const result = await response.json();
+    const response = await fetch("/api/media", { credentials: "same-origin", headers: { "Accept": "application/json" } });
+    const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Medya havuzu yüklenemedi");
     grid.innerHTML = result.items.length ? result.items.map((item, index) => {
       const isPdf = item.url.toLowerCase().endsWith(".pdf");
-      return `<button class="media-item ${isPdf ? "pdf-media-item" : ""}" type="button" data-media-index="${index}">${isPdf ? "<strong>PDF</strong>" : `<img src="${item.url}" alt="">`}<span>${item.prefix}</span></button>`;
-    }).join("") : "<p>Henüz yüklenmiş medya yok.</p>";
-    document.querySelectorAll("[data-media-index]").forEach((button) => button.addEventListener("click", () => {
+      return `<button class="media-item ${isPdf ? "pdf-media-item" : ""}" type="button" data-media-index="${index}">${isPdf ? "<strong>PDF</strong>" : `<img src="${escapeHtml(item.url)}" alt="" loading="lazy">`}<span>${escapeHtml(item.prefix)}</span></button>`;
+    }).join("") : '<p class="media-state">Henüz yüklenmiş medya yok.</p>';
+    grid.querySelectorAll("[data-media-index]").forEach((button) => button.addEventListener("click", () => {
       const item = result.items[Number(button.dataset.mediaIndex)];
       editingPages.push(normalizePage(item.url.toLowerCase().endsWith(".pdf") ? { type: "pdf", src: item.url, title: item.name } : item.url));
       renderPagePreviews();
-      status("Medya kitap sayfalarına eklendi");
+      markDirty("Medya kitap sayfalarına eklendi. Projeyi kaydedin.");
     }));
   } catch (error) {
-    grid.innerHTML = `<p>${error.message}</p>`;
+    grid.innerHTML = `<p class="media-state error">${escapeHtml(error.message)}</p>`;
   }
-}, true);
+}
+
+$("#open-media-library").addEventListener("click", openMediaLibrary);
 
 $("#logout-button").addEventListener("click", logout);
 
@@ -175,10 +182,38 @@ document.addEventListener("click", (event) => {
   applyTextFormat(getFormatTarget(toolbar.dataset.formatFor), button);
 });
 
-function status(message, error = false) {
+function status(message, state = "success") {
   const node = $("#save-status");
+  const resolvedState = state === true ? "error" : state;
   node.textContent = message;
-  node.style.color = error ? "#9c3030" : "#667700";
+  node.classList.remove("status-saving", "status-success", "status-error", "status-neutral");
+  node.classList.add(`status-${resolvedState}`);
+}
+
+function markDirty(message = "Kaydedilmemiş değişiklikler") {
+  contentRevision += 1;
+  hasUnsavedChanges = true;
+  status(message, "neutral");
+}
+
+function setBusy(control, busy, busyText = "İşleniyor...") {
+  if (!control) return;
+  if (busy) {
+    control.dataset.idleText = control.textContent;
+    control.textContent = busyText;
+  } else if (control.dataset.idleText) {
+    control.textContent = control.dataset.idleText;
+    delete control.dataset.idleText;
+  }
+  control.disabled = busy;
+  control.setAttribute("aria-busy", String(busy));
+}
+
+function updateAdminCounts() {
+  const projectCount = $("#project-count");
+  const feedbackCount = $("#feedback-count");
+  if (projectCount) projectCount.textContent = String(content?.projects?.length || 0);
+  if (feedbackCount) feedbackCount.textContent = String((content?.feedback || []).filter((item) => !item.approved).length);
 }
 
 function updateDescriptionCount() {
@@ -234,16 +269,27 @@ function applyTextFormat(textarea, button) {
   textarea.focus();
   textarea.setRangeText(replacement, start, end, "end");
   textarea.setSelectionRange(selectionStart, selectionEnd);
-  status("Biçim uygulandı. Kaydetmeyi unutmayın.");
+  if (textarea.name && content?.settings && Object.prototype.hasOwnProperty.call(content.settings, textarea.name)) {
+    content.settings[textarea.name] = textarea.value;
+  }
+  markDirty("Biçim uygulandı. Kaydetmeyi unutmayın.");
 }
 
 async function persist(message = "Kaydedildi") {
+  const revisionAtStart = contentRevision;
+  const snapshot = normalizeContent(JSON.parse(JSON.stringify(content)));
+  status("Kaydediliyor...", "saving");
+  const operation = saveQueue.catch(() => {}).then(() => saveContent(snapshot));
+  saveQueue = operation;
   try {
-    await saveContent(content);
-    status(message);
+    await operation;
+    if (revisionAtStart === contentRevision) {
+      hasUnsavedChanges = false;
+      status(message, "success");
+    }
     return true;
   } catch (error) {
-    status("İçerik sunucuya kaydedilemedi. Bağlantıyı ve kurulumu kontrol edin.", true);
+    status("İçerik sunucuya kaydedilemedi. Bağlantıyı kontrol edin.", "error");
     return false;
   }
 }
@@ -266,15 +312,19 @@ function renderHeroFeaturedFields() {
   const items = getHeroSlides();
   list.innerHTML = items.map((item, index) => `
     <div class="hero-featured-row">
-      <label>Sıra / etiket ${index + 1}<input data-hero-featured-label="${index}" value="${item.label || ""}" placeholder="Seçili Proje 01"></label>
-      <label>Proje adı ${index + 1}<input data-hero-featured-title="${index}" value="${item.title || ""}" placeholder="Mazı Konutu / 2023"></label>
-      <label class="hero-slide-upload">Görsel ${index + 1}<input data-hero-slide-upload="${index}" type="file" accept="image/*"><span>Görsel seç</span><img src="${item.image || ""}" alt=""></label>
+      <label>Sıra / etiket ${index + 1}<input data-hero-featured-label="${index}" value="${escapeHtml(item.label)}" placeholder="Seçili Proje 01"></label>
+      <label>Proje adı ${index + 1}<input data-hero-featured-title="${index}" value="${escapeHtml(item.title)}" placeholder="Mazı Konutu / 2023"></label>
+      <label class="hero-slide-upload">Görsel ${index + 1}<input data-hero-slide-upload="${index}" type="file" accept="image/*"><span>Görsel seç</span><img src="${escapeHtml(item.image)}" alt="" loading="lazy"></label>
     </div>`).join("");
   document.querySelectorAll("[data-hero-slide-upload]").forEach((input) => input.addEventListener("change", async (event) => {
-    const index = Number(event.currentTarget.dataset.heroSlideUpload);
+    const fileInput = event.currentTarget;
+    const index = Number(fileInput.dataset.heroSlideUpload);
+    const selectedFile = fileInput.files[0];
+    if (!selectedFile) return;
+    fileInput.disabled = true;
     try {
-      status(`${index + 1}. hero görseli yükleniyor...`);
-      const dataUrl = await imageFileToDataUrl(event.currentTarget.files[0], 2000);
+      status(`${index + 1}. hero görseli yükleniyor...`, "saving");
+      const dataUrl = await imageFileToDataUrl(selectedFile, 2000);
       const slides = getHeroSlides();
       slides[index].image = await uploadImage(dataUrl, "hero");
       if (index === 0) {
@@ -282,9 +332,11 @@ function renderHeroFeaturedFields() {
         $("#hero-preview").src = pendingHero;
       }
       renderHeroFeaturedFields();
-      status("Hero görseli hazır. Genel içeriği kaydetmeyi unutmayın.");
+      markDirty("Hero görseli hazır. Genel içeriği kaydedin.");
     } catch (error) {
       status(error.message || "Hero görseli yüklenemedi", true);
+    } finally {
+      if (fileInput.isConnected) { fileInput.disabled = false; fileInput.value = ""; }
     }
   }));
 }
@@ -305,13 +357,13 @@ function renderSkillFields() {
   const skills = Array.isArray(content.settings.skills) ? content.settings.skills : [];
   list.innerHTML = skills.map((skill, index) => `
     <div class="skill-row">
-      <label>Başlık ${String(index + 1).padStart(2, "0")}<input data-skill-index="${index}" value="${skill || ""}" placeholder="Örn. Modelleme & Görselleştirme"></label>
+      <label>Başlık ${String(index + 1).padStart(2, "0")}<input data-skill-index="${index}" value="${escapeHtml(skill)}" placeholder="Örn. Modelleme & Görselleştirme"></label>
       <button type="button" data-remove-skill="${index}">Sil</button>
     </div>`).join("");
   document.querySelectorAll("[data-remove-skill]").forEach((button) => button.addEventListener("click", () => {
     content.settings.skills.splice(Number(button.dataset.removeSkill), 1);
     renderSkillFields();
-    status("Başlık kaldırıldı. Kaydetmeyi unutmayın.");
+    markDirty("Başlık kaldırıldı. Kaydetmeyi unutmayın.");
   }));
 }
 
@@ -332,14 +384,14 @@ function renderStatsFields() {
   content.settings.stats = stats;
   list.innerHTML = stats.map((stat, index) => `
     <div class="stat-row">
-      <label>Sayı ${String(index + 1).padStart(2, "0")}<input data-stat-value="${index}" value="${stat.value || ""}" placeholder="06"></label>
-      <label>Açıklama ${String(index + 1).padStart(2, "0")}<input data-stat-label="${index}" value="${stat.label || ""}" placeholder="Akademik proje"></label>
+      <label>Sayı ${String(index + 1).padStart(2, "0")}<input data-stat-value="${index}" value="${escapeHtml(stat.value)}" placeholder="06"></label>
+      <label>Açıklama ${String(index + 1).padStart(2, "0")}<input data-stat-label="${index}" value="${escapeHtml(stat.label)}" placeholder="Akademik proje"></label>
       <button type="button" data-remove-stat="${index}">Sil</button>
     </div>`).join("");
   document.querySelectorAll("[data-remove-stat]").forEach((button) => button.addEventListener("click", () => {
     content.settings.stats.splice(Number(button.dataset.removeStat), 1);
     renderStatsFields();
-    status("İstatistik kaldırıldı. Kaydetmeyi unutmayın.");
+    markDirty("İstatistik kaldırıldı. Kaydetmeyi unutmayın.");
   }));
 }
 
@@ -355,14 +407,14 @@ function renderSocialFields() {
   const socials = Array.isArray(content.settings.socials) ? content.settings.socials : [];
   list.innerHTML = socials.map((social, index) => `
     <div class="social-row">
-      <label>Başlık<input data-social-label="${index}" value="${social.label || ""}" placeholder="LinkedIn"></label>
-      <label>Link<input data-social-url="${index}" value="${social.url || ""}" placeholder="https://..."></label>
+      <label>Başlık<input data-social-label="${index}" value="${escapeHtml(social.label)}" placeholder="LinkedIn"></label>
+      <label>Link<input data-social-url="${index}" value="${escapeHtml(social.url)}" placeholder="https://..."></label>
       <button type="button" data-remove-social="${index}">Sil</button>
     </div>`).join("");
   document.querySelectorAll("[data-remove-social]").forEach((button) => button.addEventListener("click", () => {
     content.settings.socials.splice(Number(button.dataset.removeSocial), 1);
     renderSocialFields();
-    status("Sosyal link kaldırıldı. Kaydetmeyi unutmayın.");
+    markDirty("Sosyal link kaldırıldı. Kaydetmeyi unutmayın.");
   }));
 }
 
@@ -376,18 +428,24 @@ function collectSocialFields() {
 
 async function saveProjectOrder(message = "Proje sırası kaydedildi") {
   renderProjects();
-  await persist(message);
+  markDirty();
+  return persist(message);
 }
 
 function renderProjects() {
   const container = $("#admin-projects");
   container.innerHTML = "";
+  if (!content.projects.length) {
+    container.innerHTML = '<div class="admin-empty"><strong>Henüz proje yok.</strong><span>İlk proje kitabınızı “Yeni proje” düğmesiyle ekleyin.</span></div>';
+    updateAdminCounts();
+    return;
+  }
   content.projects.forEach((project, index) => {
     const card = document.createElement("article");
     card.className = "admin-project";
     card.draggable = true;
     card.dataset.projectIndex = index;
-    card.innerHTML = `<img src="${project.cover}" alt=""><strong>${project.title}</strong><small>${project.location} · ${project.year} · ${(project.pages || []).length} sayfa</small>`;
+    card.innerHTML = `<img src="${escapeHtml(project.cover)}" alt="" loading="lazy"><strong>${escapeHtml(project.title)}</strong><small>${escapeHtml(project.location)} · ${escapeHtml(project.year)} · ${(project.pages || []).length} sayfa</small>`;
     card.insertAdjacentHTML("beforeend", `
       <div class="project-order-actions">
         <span>Sıra ${String(index + 1).padStart(2, "0")}</span>
@@ -404,8 +462,12 @@ function renderProjects() {
     const from = Number(button.dataset.moveProject);
     const to = from + Number(button.dataset.direction);
     if (to < 0 || to >= content.projects.length) return;
+    const previousOrder = [...content.projects];
     [content.projects[from], content.projects[to]] = [content.projects[to], content.projects[from]];
-    await saveProjectOrder();
+    if (!await saveProjectOrder()) {
+      content.projects = previousOrder;
+      renderProjects();
+    }
   }));
   document.querySelectorAll(".admin-project").forEach((card) => {
     card.addEventListener("dragstart", () => {
@@ -422,12 +484,17 @@ function renderProjects() {
       event.preventDefault();
       const targetIndex = Number(card.dataset.projectIndex);
       if (draggedProjectIndex < 0 || draggedProjectIndex === targetIndex) return;
+      const previousOrder = [...content.projects];
       const [moved] = content.projects.splice(draggedProjectIndex, 1);
       content.projects.splice(targetIndex, 0, moved);
       draggedProjectIndex = -1;
-      await saveProjectOrder();
+      if (!await saveProjectOrder()) {
+        content.projects = previousOrder;
+        renderProjects();
+      }
     });
   });
+  updateAdminCounts();
 }
 
 function renderFeedbackAdmin() {
@@ -436,6 +503,7 @@ function renderFeedbackAdmin() {
   const feedback = Array.isArray(content.feedback) ? content.feedback : [];
   if (!feedback.length) {
     container.innerHTML = `<div class="feedback-admin-empty">Henüz geri bildirim yok.</div>`;
+    updateAdminCounts();
     return;
   }
   container.innerHTML = feedback.map((item, index) => {
@@ -457,17 +525,27 @@ function renderFeedbackAdmin() {
   }).join("");
   document.querySelectorAll("[data-toggle-feedback]").forEach((button) => button.addEventListener("click", async () => {
     const index = Number(button.dataset.toggleFeedback);
+    const previousValue = content.feedback[index].approved;
     content.feedback[index].approved = !content.feedback[index].approved;
     renderFeedbackAdmin();
-    await persist(content.feedback[index].approved ? "Geri bildirim yayına alındı" : "Geri bildirim yayından kaldırıldı");
+    markDirty();
+    if (!await persist(content.feedback[index].approved ? "Geri bildirim yayına alındı" : "Geri bildirim yayından kaldırıldı")) {
+      content.feedback[index].approved = previousValue;
+      renderFeedbackAdmin();
+    }
   }));
   document.querySelectorAll("[data-delete-feedback]").forEach((button) => button.addEventListener("click", async () => {
     const index = Number(button.dataset.deleteFeedback);
     if (!confirm("Bu geri bildirim silinsin mi?")) return;
-    content.feedback.splice(index, 1);
+    const [removedFeedback] = content.feedback.splice(index, 1);
     renderFeedbackAdmin();
-    await persist("Geri bildirim silindi");
+    markDirty();
+    if (!await persist("Geri bildirim silindi")) {
+      content.feedback.splice(index, 0, removedFeedback);
+      renderFeedbackAdmin();
+    }
   }));
+  updateAdminCounts();
 }
 
 function renderPagePreviews() {
@@ -476,25 +554,26 @@ function renderPagePreviews() {
       ${page.type === "text" ? `
         <div class="page-preview-visual text-page-preview" style="--page-bg:${page.background}">
           <span class="page-preview-number">${index + 1}</span>
-          <small>${page.kicker || "Metin sayfası"}</small>
-          <strong>${page.title || "Başlıksız"}</strong>
+          <small>${escapeHtml(page.kicker || "Metin sayfası")}</small>
+          <strong>${escapeHtml(page.title || "Başlıksız")}</strong>
           <p>${page.body || ""}</p>
         </div>` : page.type === "pdf" ? `
         <div class="page-preview-visual pdf-page-preview" style="--page-bg:${page.background || "#e8e4da"}">
           <span class="page-preview-number">${index + 1}</span>
-          <object data="${page.src}" type="application/pdf" aria-label="${page.title || "PDF sayfası"}">
+          <div class="pdf-placeholder" aria-label="${escapeHtml(page.title || "PDF sayfası")}">
             <strong>PDF</strong>
-            <small>${page.title || "PDF sayfası"}</small>
-          </object>
+            <small>${escapeHtml(page.title || "PDF sayfası")}</small>
+          </div>
         </div>` : `
         <div class="page-preview-visual" style="--page-bg:${page.background};--page-fit:${page.fit};--page-position:${page.position}">
-          <img src="${page.src}" alt="Sayfa ${index + 1}"><span class="page-preview-number">${index + 1}</span>
+          <img src="${escapeHtml(page.src)}" alt="Sayfa ${index + 1}" loading="lazy"><span class="page-preview-number">${index + 1}</span>
         </div>`}
       <div class="page-preview-actions"><button type="button" data-move-page="${index}" data-direction="-1" aria-label="Sola taşı">←</button><button type="button" data-edit-page="${index}">${page.type === "text" ? "Metin" : "Yerleşim"}</button><button type="button" data-move-page="${index}" data-direction="1" aria-label="Sağa taşı">→</button><button class="remove-page" type="button" data-remove-page="${index}">Sil</button></div>
     </div>`).join("");
   document.querySelectorAll("[data-remove-page]").forEach((button) => button.addEventListener("click", () => {
     editingPages.splice(Number(button.dataset.removePage), 1);
     renderPagePreviews();
+    markDirty("Sayfa kaldırıldı. Projeyi kaydedin.");
   }));
   document.querySelectorAll("[data-edit-page]").forEach((button) => button.addEventListener("click", () => openPageSettings(Number(button.dataset.editPage))));
   document.querySelectorAll("[data-move-page]").forEach((button) => button.addEventListener("click", () => {
@@ -503,6 +582,7 @@ function renderPagePreviews() {
     if (to < 0 || to >= editingPages.length) return;
     [editingPages[from], editingPages[to]] = [editingPages[to], editingPages[from]];
     renderPagePreviews();
+    markDirty("Sayfa sırası değişti. Projeyi kaydedin.");
   }));
   document.querySelectorAll(".page-preview").forEach((card) => {
     card.addEventListener("dragstart", () => {
@@ -522,6 +602,7 @@ function renderPagePreviews() {
       const [moved] = editingPages.splice(draggedPageIndex, 1);
       editingPages.splice(targetIndex, 0, moved);
       renderPagePreviews();
+      markDirty("Sayfa sırası değişti. Projeyi kaydedin.");
     });
   });
 }
@@ -580,15 +661,36 @@ function openEditor(id = "") {
 
 $("#project-description").addEventListener("input", updateDescriptionCount);
 
+$("#settings-form").addEventListener("input", (event) => {
+  if (!content || event.target.type === "file") return;
+  const target = event.target;
+  if (target.name && Object.prototype.hasOwnProperty.call(content.settings, target.name)) content.settings[target.name] = target.value;
+  if (target.dataset.heroFeaturedLabel !== undefined) getHeroSlides()[Number(target.dataset.heroFeaturedLabel)].label = target.value;
+  if (target.dataset.heroFeaturedTitle !== undefined) getHeroSlides()[Number(target.dataset.heroFeaturedTitle)].title = target.value;
+  if (target.dataset.skillIndex !== undefined) content.settings.skills[Number(target.dataset.skillIndex)] = target.value;
+  if (target.dataset.statValue !== undefined) content.settings.stats[Number(target.dataset.statValue)].value = target.value;
+  if (target.dataset.statLabel !== undefined) content.settings.stats[Number(target.dataset.statLabel)].label = target.value;
+  if (target.dataset.socialLabel !== undefined) content.settings.socials[Number(target.dataset.socialLabel)].label = target.value;
+  if (target.dataset.socialUrl !== undefined) content.settings.socials[Number(target.dataset.socialUrl)].url = target.value;
+  markDirty();
+});
+
+$("#project-form").addEventListener("input", (event) => {
+  if (event.target.type !== "file") markDirty("Projede kaydedilmemiş değişiklikler var");
+});
+
 document.querySelectorAll("aside nav button").forEach((button) => button.addEventListener("click", () => {
   document.querySelectorAll("aside nav button,.panel").forEach((node) => node.classList.remove("active"));
   button.classList.add("active");
   $(`#${button.dataset.tab}`).classList.add("active");
-  $("#panel-title").textContent = button.textContent;
+  $("#panel-title").textContent = button.dataset.title || button.textContent.trim();
+  if (window.innerWidth < 901) window.scrollTo({ top: 0, behavior: "smooth" });
 }));
 
 $("#settings-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const submitButton = event.currentTarget.querySelector("button[type='submit']");
+  setBusy(submitButton, true, "Kaydediliyor...");
   const data = new FormData(event.currentTarget);
   Object.keys(content.settings).forEach((key) => {
     if (key !== "heroImage" && key !== "heroSlides" && key !== "socials" && key !== "skills" && key !== "stats" && key !== "heroFeaturedProjects" && data.has(key)) content.settings[key] = data.get(key).trim();
@@ -599,39 +701,56 @@ $("#settings-form").addEventListener("submit", async (event) => {
   collectSkillFields();
   collectStatsFields();
   collectSocialFields();
+  markDirty();
   await persist("Genel içerik kaydedildi");
+  setBusy(submitButton, false);
 });
 
 $("#hero-upload").addEventListener("change", async (event) => {
+  const input = event.currentTarget;
+  const selectedFile = input.files[0];
+  if (!selectedFile) return;
+  input.disabled = true;
   try {
-    status("Görsel yükleniyor...");
-    const dataUrl = await imageFileToDataUrl(event.target.files[0], 2000);
+    status("Görsel yükleniyor...", "saving");
+    const dataUrl = await imageFileToDataUrl(selectedFile, 2000);
     pendingHero = await uploadImage(dataUrl, "hero");
     getHeroSlides()[0].image = pendingHero;
     $("#hero-preview").src = pendingHero;
     renderHeroFeaturedFields();
-    status("Kaydetmeye hazır");
+    markDirty("Hero görseli hazır. Genel içeriği kaydedin.");
   } catch (error) { status(error.message || "Görsel yüklenemedi", true); }
+  finally { input.disabled = false; input.value = ""; }
 });
 
 $("#cover-upload").addEventListener("change", async (event) => {
+  const input = event.currentTarget;
+  const selectedFile = input.files[0];
+  if (!selectedFile) return;
+  input.disabled = true;
   try {
-    status("Kapak yükleniyor...");
-    const dataUrl = await imageFileToDataUrl(event.target.files[0], 1500);
+    status("Kapak yükleniyor...", "saving");
+    const dataUrl = await imageFileToDataUrl(selectedFile, 1500);
     editingCover = await uploadImage(dataUrl, "covers");
     $("#cover-preview").src = editingCover;
-    status("Kaydetmeye hazır");
+    markDirty("Kapak hazır. Projeyi kaydedin.");
   } catch (error) { status(error.message || "Kapak yüklenemedi", true); }
+  finally { input.disabled = false; input.value = ""; }
 });
 
 $("#pages-upload").addEventListener("change", async (event) => {
-  status("Sayfalar hazırlanıyor...");
+  const input = event.currentTarget;
+  const files = [...input.files];
+  if (!files.length) return;
+  input.disabled = true;
+  status(`0 / ${files.length} sayfa hazırlanıyor...`, "saving");
   try {
     const newPages = [];
-    for (const file of [...event.target.files]) {
+    for (const [index, file] of files.entries()) {
+      status(`${index + 1} / ${files.length} sayfa yükleniyor...`, "saving");
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
         if (file.size > 3 * 1024 * 1024) throw new Error(`${file.name} 3 MB'dan büyük. PDF'yi sıkıştırıp tekrar yükleyin.`);
-        const src = await fileToDataUrl(file);
+        const src = await uploadPdf(file, "pages");
         newPages.push(normalizePage({ type: "pdf", src, title: file.name.replace(/\.pdf$/i, "") }));
       } else {
         const dataUrl = await imageFileToDataUrl(file, 1800);
@@ -640,13 +759,14 @@ $("#pages-upload").addEventListener("change", async (event) => {
     }
     editingPages.push(...newPages);
     renderPagePreviews();
-    status("Kaydetmeye hazır");
-    event.target.value = "";
+    markDirty(`${newPages.length} sayfa hazır. Projeyi kaydedin.`);
   } catch (error) { status(error.message || "Sayfalardan biri yüklenemedi", true); }
+  finally { input.disabled = false; input.value = ""; }
 });
 
 $("#project-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+  const submitButton = event.currentTarget.querySelector("button[type='submit']");
   const data = new FormData(event.currentTarget);
   const project = Object.fromEntries(["id", "title", "year", "location", "category", "color", "description"].map((key) => [key, data.get(key).trim()]));
   if (project.description.length > PROJECT_DESCRIPTION_LIMIT) {
@@ -655,16 +775,30 @@ $("#project-form").addEventListener("submit", async (event) => {
     updateDescriptionCount();
     return;
   }
+  setBusy(submitButton, true, "Kaydediliyor...");
+  try {
+    const embeddedPdfs = editingPages.filter((page) => page.type === "pdf" && String(page.src).startsWith("data:application/pdf"));
+    for (const [index, page] of embeddedPdfs.entries()) {
+      status(`Eski PDF ${index + 1} / ${embeddedPdfs.length} medya havuzuna taşınıyor...`, "saving");
+      page.src = await uploadPdfDataUrl(page.src, "pages", `${page.title || "document"}.pdf`);
+    }
+  } catch (error) {
+    status(error.message || "PDF medya havuzuna taşınamadı.", "error");
+    setBusy(submitButton, false);
+    return;
+  }
   project.cover = editingCover;
   project.pages = [...editingPages];
   const index = content.projects.findIndex((item) => item.id === project.id);
   if (index >= 0) content.projects[index] = project;
   else content.projects.push(project);
+  markDirty();
   if (await persist("Proje kaydedildi")) {
     renderProjects();
     renderFeedbackAdmin();
     $("#project-editor").close();
   }
+  setBusy(submitButton, false);
 });
 
 $("#add-project").addEventListener("click", () => openEditor());
@@ -677,60 +811,84 @@ $("#add-text-page").addEventListener("click", () => {
     background: "#e8e4da"
   }));
   renderPagePreviews();
-  status("Metin sayfası eklendi. Projeyi kaydetmeyi unutmayın.");
+  markDirty("Metin sayfası eklendi. Projeyi kaydedin.");
 });
 $("#add-social").addEventListener("click", () => {
   content.settings.socials = Array.isArray(content.settings.socials) ? content.settings.socials : [];
   content.settings.socials.push({ label: "", url: "" });
   renderSocialFields();
+  markDirty();
 });
 $("#add-skill").addEventListener("click", () => {
   content.settings.skills = Array.isArray(content.settings.skills) ? content.settings.skills : [];
   content.settings.skills.push("");
   renderSkillFields();
+  markDirty();
 });
 $("#add-stat").addEventListener("click", () => {
   content.settings.stats = Array.isArray(content.settings.stats) ? content.settings.stats : [];
   content.settings.stats.push({ value: "", label: "" });
   renderStatsFields();
-  status("Yeni istatistik eklendi. Kaydetmeyi unutmayın.");
+  markDirty("Yeni istatistik eklendi. Kaydetmeyi unutmayın.");
 });
 $("#close-editor").addEventListener("click", () => $("#project-editor").close());
 $("#delete-project").addEventListener("click", async () => {
+  const button = $("#delete-project");
   const id = $("#project-form").elements.id.value;
   if (!confirm("Bu proje kalıcı olarak silinsin mi?")) return;
+  const previousProjects = [...content.projects];
   content.projects = content.projects.filter((project) => project.id !== id);
-  await persist("Proje silindi");
-  renderProjects();
-  renderFeedbackAdmin();
-  $("#project-editor").close();
+  markDirty();
+  setBusy(button, true, "Siliniyor...");
+  if (await persist("Proje silindi")) {
+    renderProjects();
+    renderFeedbackAdmin();
+    $("#project-editor").close();
+  } else {
+    content.projects = previousProjects;
+    renderProjects();
+  }
+  setBusy(button, false);
 });
 
 $("#export-data").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(content)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(content, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = `tunahan-tayinci-portfolio-yedek-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(link.href);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 });
 
 $("#import-data").addEventListener("change", async (event) => {
+  const input = event.currentTarget;
+  if (!input.files[0]) return;
+  input.disabled = true;
   try {
-    const imported = JSON.parse(await event.target.files[0].text());
+    const imported = JSON.parse(await input.files[0].text());
     if (!imported.settings || !Array.isArray(imported.projects)) throw new Error();
     content = normalizeContent(imported);
+    markDirty();
     if (await persist("Yedek geri yüklendi")) { fillSettings(); renderProjects(); renderFeedbackAdmin(); }
   } catch { status("Geçersiz yedek dosyası", true); }
+  finally { input.disabled = false; input.value = ""; }
 });
 
 $("#reset-data").addEventListener("click", async () => {
+  const button = $("#reset-data");
   if (!confirm("Tüm düzenlemeler silinip ilk içeriğe dönülsün mü?")) return;
   resetContent();
   content = JSON.parse(JSON.stringify(DEFAULT_CONTENT));
-  await persist("İçerik sıfırlandı");
-  fillSettings();
-  renderProjects();
+  markDirty();
+  setBusy(button, true, "Sıfırlanıyor...");
+  if (await persist("İçerik sıfırlandı")) {
+    fillSettings();
+    renderProjects();
+    renderFeedbackAdmin();
+  }
+  setBusy(button, false);
 });
 
 async function checkSession() {
@@ -755,7 +913,7 @@ $("#save-page-settings").addEventListener("click", () => {
   };
   renderPagePreviews();
   $("#page-settings").close();
-  status("Sayfa yerleşimi güncellendi. Projeyi kaydetmeyi unutmayın.");
+  markDirty("Sayfa yerleşimi güncellendi. Projeyi kaydedin.");
 });
 $("#close-text-page-settings").addEventListener("click", () => $("#text-page-settings").close());
 $("#save-text-page-settings").addEventListener("click", () => {
@@ -769,28 +927,15 @@ $("#save-text-page-settings").addEventListener("click", () => {
   });
   renderPagePreviews();
   $("#text-page-settings").close();
-  status("Metin sayfası güncellendi. Projeyi kaydetmeyi unutmayın.");
+  markDirty("Metin sayfası güncellendi. Projeyi kaydedin.");
 });
 
 $("#close-media-library").addEventListener("click", () => $("#media-library").close());
-$("#open-media-library").addEventListener("click", async () => {
-  const grid = $("#media-grid");
-  grid.innerHTML = "<p>Medya havuzu yükleniyor...</p>";
-  $("#media-library").showModal();
-  try {
-    const response = await fetch("/api/media");
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "Medya havuzu yüklenemedi");
-    grid.innerHTML = result.items.length ? result.items.map((item, index) => `
-      <button class="media-item" type="button" data-media-index="${index}"><img src="${item.url}" alt=""><span>${item.prefix}</span></button>`).join("") : "<p>Henüz yüklenmiş görsel yok.</p>";
-    document.querySelectorAll("[data-media-index]").forEach((button) => button.addEventListener("click", () => {
-      editingPages.push(normalizePage(result.items[Number(button.dataset.mediaIndex)].url));
-      renderPagePreviews();
-      status("Görsel kitap sayfalarına eklendi");
-    }));
-  } catch (error) {
-    grid.innerHTML = `<p>${error.message}</p>`;
-  }
+
+window.addEventListener("beforeunload", (event) => {
+  if (!hasUnsavedChanges) return;
+  event.preventDefault();
+  event.returnValue = "";
 });
 
 

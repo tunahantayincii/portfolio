@@ -151,13 +151,18 @@ async function getContent() {
 }
 
 async function saveContent(content) {
-  writeLocalValue(STORAGE_KEY, JSON.stringify(content));
   const response = await fetch("/api/content", {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
     body: JSON.stringify(content)
   });
-  if (!response.ok) throw new Error("Content could not be saved");
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(result.error || "Content could not be saved");
+  }
+  writeLocalValue(STORAGE_KEY, JSON.stringify(content));
+  writeLocalValue(REMOTE_CACHE_KEY, "1");
 }
 
 function resetContent() {
@@ -212,14 +217,19 @@ async function uploadFile(file, prefix = "project") {
 }
 
 async function uploadPdf(file, prefix = "pages") {
+  return uploadPdfDataUrl(await fileToDataUrl(file), prefix, file.name || "document.pdf");
+}
+
+async function uploadPdfDataUrl(dataUrl, prefix = "pages", name = "document.pdf") {
   const response = await fetch("/api/media", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       kind: "pdf",
-      dataUrl: await fileToDataUrl(file),
+      dataUrl,
       prefix,
-      name: file.name || "document.pdf"
+      name
     })
   });
   const result = await response.json().catch(() => ({}));

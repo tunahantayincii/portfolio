@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tunahan Tayıncı Portfolio — Yönetim</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Manrope:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="admin.css?v=mobilefix-2">
+  <link rel="stylesheet" href="admin.css?v=admin-v3">
 </head>
 <body>
   <section class="login-screen" id="login-screen">
@@ -22,13 +22,19 @@
   <div class="admin-shell" id="admin-shell">
   <aside>
     <a class="admin-logo" href="index.html"><span>TUNAHAN TAYINCI</span><span>PORTFOLIO</span><small>YÖNETİM</small></a>
-    <nav><button data-tab="general" class="active">Genel İçerik</button><button data-tab="projects">Projeler</button><button data-tab="feedback">Geri Bildirimler</button><button data-tab="backup">Yedekleme</button></nav>
+    <nav aria-label="Yönetim bölümleri">
+      <button data-tab="general" data-title="Genel İçerik" class="active"><span>01</span><b>Genel İçerik</b></button>
+      <button data-tab="projects" data-title="Projeler"><span>02</span><b>Projeler</b><i id="project-count">0</i></button>
+      <button data-tab="feedback" data-title="Geri Bildirimler"><span>03</span><b>Geri Bildirimler</b><i id="feedback-count">0</i></button>
+      <button data-tab="backup" data-title="Yedekleme"><span>04</span><b>Yedekleme</b></button>
+    </nav>
     <div class="aside-bottom"><a class="view-site" href="index.html">Siteyi görüntüle ↗</a><button id="logout-button" type="button">Çıkış yap</button></div>
   </aside>
   <main>
-    <header><div><span>İçerik yönetimi</span><h1 id="panel-title">Genel İçerik</h1></div><p id="save-status">Değişiklik yok</p></header>
+    <header><div><span>İçerik yönetimi</span><h1 id="panel-title">Genel İçerik</h1></div><div class="header-actions"><a href="index.html" target="_blank" rel="noopener">Siteyi aç ↗</a><p id="save-status" role="status" aria-live="polite">Hazır</p></div></header>
 
     <section class="panel active" id="general">
+      <div class="panel-intro"><span>01</span><p>Ana sayfadaki metinleri, hero projelerini, hakkımda alanını ve iletişim bilgilerini yönetin.</p></div>
       <form id="settings-form" class="form-grid">
         <label>Ad / Portfolyo adı<input name="studioName"></label>
         <label>Öğrenci bilgisi / Konum<input name="heroLocation"></label>
@@ -61,16 +67,19 @@
     </section>
 
     <section class="panel" id="projects">
+      <div class="panel-intro"><span>02</span><p>Proje kitaplarını, kapakları ve bütün iç sayfaları tek yerden düzenleyin.</p></div>
       <div class="project-toolbar"><p>Projeler kitap olarak gösterilir. Kapak, iç sayfalar ve sıralamayı buradan yönetin. Kartları sürükleyebilir veya oklarla sıralayabilirsiniz.</p><button class="primary" id="add-project" type="button">+ Yeni proje</button></div>
       <div class="admin-projects" id="admin-projects"></div>
     </section>
 
     <section class="panel" id="feedback">
+      <div class="panel-intro"><span>03</span><p>Ziyaretçi notlarını inceleyin, yayınlayın veya kaldırın.</p></div>
       <div class="feedback-admin-toolbar"><p>Ziyaretçilerden gelen geri bildirimler önce burada bekler. Onayladığınız mesajlar ilgili proje kitabında görünür.</p></div>
       <div class="feedback-admin-list" id="feedback-admin-list"></div>
     </section>
 
     <section class="panel" id="backup">
+      <div class="panel-intro"><span>04</span><p>İçeriğinizin bir kopyasını indirin veya daha önce aldığınız yedeği geri yükleyin.</p></div>
       <div class="backup-card"><span>01</span><h2>İçeriği dışa aktar</h2><p>Tüm metinleri ve görselleri tek JSON dosyasında yedekleyin.</p><button class="primary" id="export-data">Yedeği indir</button></div>
       <div class="backup-card"><span>02</span><h2>Yedeği geri yükle</h2><p>Daha önce indirdiğiniz JSON yedeğini yükleyin.</p><label class="file-button">Yedek seç<input id="import-data" type="file" accept=".json"></label></div>
       <div class="backup-card danger"><span>03</span><h2>Fabrika ayarları</h2><p>Tüm değişiklikleri silip ilk içeriğe dönün.</p><button id="reset-data">İçeriği sıfırla</button></div>
@@ -134,7 +143,7 @@
     </div>
   </dialog>
   </div>
-  <script src="content.js?v=mobilefix-2"></script><script src="admin.js?v=mobilefix-2"></script>
+  <script src="content.js?v=admin-v3"></script><script src="admin.js?v=admin-v3"></script>
 </body>
 </html>
 
